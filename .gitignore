@@ -1,0 +1,51 @@
+# ============================================================
+# DADOS SENSÍVEIS — nunca versionar
+# ============================================================
+
+# PDFs de inventário (dados reais de material da OM)
+*.pdf
+*.PDF
+
+# Arquivos TXT com dados reais de inventário
+OM_*.txt
+Material*.txt
+BackupSimatex*.ZLB
+BackupSimatex*.zlb
+
+# Backups de inventário
+backups/
+
+# Arquivos extraídos de backup
+extracted_rar/
+
+# ============================================================
+# APP — diretórios de runtime (gerados em execução)
+# ============================================================
+
+# PDFs enviados via upload
+conversor-siscofis-siads/uploads/*
+!conversor-siscofis-siads/uploads/.gitkeep
+
+# TXTs gerados (dados reais)
+conversor-siscofis-siads/output/*
+!conversor-siscofis-siads/output/.gitkeep
+
+# ============================================================
+# NODE / DOCKER
+# ============================================================
+
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.env
+.env.*
+!.env.example
+
+# ============================================================
+# SISTEMA
+# ============================================================
+.DS_Store
+Thumbs.db
+*.swp
+*.swo

@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  pdf-extractor:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: conversor-siscofis-siads
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./uploads:/usr/src/app/uploads
+      - ./output:/usr/src/app/output
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+    restart: unless-stopped

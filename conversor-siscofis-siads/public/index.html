@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conversor-SISCOFIS-SIADS</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+        }
+
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .upload-area {
+            border: 3px dashed #667eea;
+            border-radius: 10px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #f8f9ff;
+        }
+
+        .upload-area:hover {
+            border-color: #764ba2;
+            background: #f0f2ff;
+        }
+
+        .upload-area.dragover {
+            border-color: #764ba2;
+            background: #e8ebff;
+            transform: scale(1.02);
+        }
+
+        .upload-icon {
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+
+        .upload-text {
+            color: #666;
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+            width: 100%;
+            font-weight: bold;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .file-info {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f0f2ff;
+            border-radius: 10px;
+            display: none;
+        }
+
+        .file-info.show {
+            display: block;
+        }
+
+        .file-name {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .file-size {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .result {
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 10px;
+            display: none;
+        }
+
+        .result.show {
+            display: block;
+        }
+
+        .result.success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+
+        .result.error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .download-link {
+            display: inline-block;
+            margin-top: 10px;
+            color: #667eea;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .download-link:hover {
+            text-decoration: underline;
+        }
+
+        .user-fields {
+            margin-top: 20px;
+            display: flex;
+            gap: 12px;
+        }
+
+        .user-fields .field {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .user-fields label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        .user-fields input {
+            padding: 9px 12px;
+            border: 1.5px solid #ccc;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.2s;
+            width: 100%;
+        }
+
+        .user-fields input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .completion-card {
+            margin-top: 12px;
+            padding: 14px 18px;
+            background: #eaf4ff;
+            border: 1px solid #b8d9f5;
+            border-radius: 10px;
+            font-size: 13px;
+            color: #1a3c5e;
+            line-height: 1.8;
+        }
+
+        .completion-card strong {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 14px;
+            color: #0d2b45;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏛️ Conversor-SISCOFIS-SIADS</h1>
+        <p class="subtitle">Conversão de Inventário de Almoxarifado (SISCOFIS → SIADS)</p>
+
+        <form id="uploadForm" enctype="multipart/form-data">
+            <div class="upload-area" id="uploadArea">
+                <div class="upload-icon">📄</div>
+                <div class="upload-text">
+                    <strong>Clique para selecionar</strong> ou arraste o arquivo PDF aqui
+                </div>
+                <div style="color: #999; font-size: 12px; margin-top: 5px;">
+                    Tamanho máximo: 10MB
+                </div>
+                <input type="file" id="pdfFile" name="pdf" accept=".pdf" class="file-input">
+            </div>
+
+            <div class="file-info" id="fileInfo">
+                <div class="file-name" id="fileName"></div>
+                <div class="file-size" id="fileSize"></div>
+            </div>
+
+            <div class="user-fields">
+                <div class="field">
+                    <label for="userName">Nome do Usuário</label>
+                    <input type="text" id="userName" placeholder="Nome completo" autocomplete="name">
+                </div>
+                <div class="field">
+                    <label for="userCpf">CPF</label>
+                    <input type="text" id="userCpf" placeholder="000.000.000-00" maxlength="14" autocomplete="off">
+                </div>
+            </div>
+
+            <button type="submit" class="btn" id="uploadBtn" disabled>
+                Processar PDF
+            </button>
+        </form>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <div>Processando arquivo...</div>
+        </div>
+
+        <div class="result" id="result"></div>
+    </div>
+
+    <script>
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('pdfFile');
+        const fileInfo = document.getElementById('fileInfo');
+        const fileName = document.getElementById('fileName');
+        const fileSize = document.getElementById('fileSize');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const uploadForm = document.getElementById('uploadForm');
+        const loading = document.getElementById('loading');
+        const result = document.getElementById('result');
+        const userNameInput = document.getElementById('userName');
+        const userCpfInput = document.getElementById('userCpf');
+
+        // CPF mask
+        userCpfInput.addEventListener('input', () => {
+            let v = userCpfInput.value.replace(/\D/g, '').slice(0, 11);
+            if (v.length > 9) v = v.replace(/(\d{3})(\d{3})(\d{3})(\d{1,2})/, '$1.$2.$3-$4');
+            else if (v.length > 6) v = v.replace(/(\d{3})(\d{3})(\d{1,3})/, '$1.$2.$3');
+            else if (v.length > 3) v = v.replace(/(\d{3})(\d{1,3})/, '$1.$2');
+            userCpfInput.value = v;
+        });
+
+        // Click to upload
+        uploadArea.addEventListener('click', () => fileInput.click());
+
+        // File selection
+        fileInput.addEventListener('change', (e) => {
+            handleFile(e.target.files[0]);
+        });
+
+        // Drag and drop
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const file = e.dataTransfer.files[0];
+            if (file && file.type === 'application/pdf') {
+                fileInput.files = e.dataTransfer.files;
+                handleFile(file);
+            } else {
+                showResult('error', 'Por favor, selecione um arquivo PDF válido.');
+            }
+        });
+
+        function handleFile(file) {
+            if (!file) return;
+
+            if (file.type !== 'application/pdf') {
+                showResult('error', 'Por favor, selecione um arquivo PDF válido.');
+                return;
+            }
+
+            if (file.size > 10 * 1024 * 1024) {
+                showResult('error', 'O arquivo é muito grande. Tamanho máximo: 10MB.');
+                return;
+            }
+
+            fileName.textContent = `📄 ${file.name}`;
+            fileSize.textContent = `Tamanho: ${(file.size / 1024).toFixed(2)} KB`;
+            fileInfo.classList.add('show');
+            uploadBtn.disabled = false;
+            result.classList.remove('show');
+        }
+
+        uploadForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const file = fileInput.files[0];
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append('pdf', file);
+
+            uploadBtn.disabled = true;
+            loading.classList.add('show');
+            result.classList.remove('show');
+
+            try {
+                const response = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    const now = new Date().toLocaleString('pt-BR');
+                    const autor = userNameInput.value.trim() || 'Não informado';
+                    const cpf   = userCpfInput.value.trim()  || 'Não informado';
+                    let message = `
+                        <strong>✓ Arquivo processado com sucesso!</strong><br><br>
+                        <strong>Arquivo gerado:</strong> ${data.data.outputFile}<br>
+                        <strong>Total de itens:</strong> ${data.data.itemsCount}<br>
+                        <strong>Depósito:</strong> ${data.data.extractedData.deposito}<br>
+                        <a href="${data.data.outputPath}" class="download-link" download>
+                            📥 Baixar arquivo TXT
+                        </a>
+                        <div class="completion-card">
+                            <strong>Registro de Conversão</strong>
+                            Arquivo gerado pelo sistema Conversor-SISCOFIS-SIADS<br>
+                            Data de processamento: ${now}<br>
+                            Autor: ${autor}<br>
+                            CPF: ${cpf}
+                        </div>
+                    `;
+                    showResult('success', message);
+                } else {
+                    showResult('error', `Erro: ${data.message || data.error}`);
+                }
+            } catch (error) {
+                showResult('error', `Erro ao processar arquivo: ${error.message}`);
+            } finally {
+                loading.classList.remove('show');
+                uploadBtn.disabled = false;
+            }
+        });
+
+        function showResult(type, message) {
+            result.className = `result show ${type}`;
+            result.innerHTML = message;
+        }
+    </script>
+</body>
+</html>
