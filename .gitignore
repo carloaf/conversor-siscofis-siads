@@ -1,3 +1,6 @@
+# Dados de usuários (contém CPF e identidade militar)
+conversor-siscofis-siads/data/users.json
+
 # ============================================================
 # DADOS SENSÍVEIS — nunca versionar
 # ============================================================

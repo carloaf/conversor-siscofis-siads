@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login — Conversor-SISCOFIS-SIADS</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #7A8C42 0%, #4A5C28 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+            width: 100%;
+            max-width: 420px;
+        }
+
+        .brand {
+            text-align: center;
+            margin-bottom: 28px;
+        }
+        .brand h1 { font-size: 22px; color: #333; margin-bottom: 4px; }
+        .brand p  { font-size: 12px; color: #888; }
+
+        .field { margin-bottom: 16px; }
+        .field label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: #555;
+            margin-bottom: 5px;
+        }
+        .field input {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1.5px solid #ddd;
+            border-radius: 8px;
+            font-size: 15px;
+            transition: border-color 0.2s;
+        }
+        .field input:focus { outline: none; border-color: #6B7C3A; }
+
+        .btn {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #7A8C42 0%, #4A5C28 100%);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 8px;
+            transition: all 0.2s;
+        }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 5px 20px rgba(107,124,58,0.4); }
+
+        .msg {
+            margin-top: 14px;
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            display: none;
+        }
+        .msg.error   { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; display: block; }
+        .msg.success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; display: block; }
+
+        .footer {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 13px;
+            color: #888;
+        }
+        .footer a { color: #6B7C3A; text-decoration: none; font-weight: 600; }
+        .footer a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="brand">
+            <h1>🔐 Acesso ao Sistema</h1>
+            <p>Conversor-SISCOFIS-SIADS</p>
+        </div>
+
+        <form id="loginForm">
+            <div class="field">
+                <label for="cpf">CPF</label>
+                <input type="text" id="cpf" placeholder="000.000.000-00" maxlength="14" autocomplete="off" required>
+            </div>
+            <div class="field">
+                <label for="password">Senha</label>
+                <input type="password" id="password" placeholder="••••••••" required>
+            </div>
+            <button type="submit" class="btn">Entrar</button>
+        </form>
+
+        <div class="msg" id="msg"></div>
+
+        <div class="footer">
+            Não tem cadastro? <a href="/register.html">Registrar-se</a>
+        </div>
+    </div>
+
+    <script>
+        const cpfInput = document.getElementById('cpf');
+        const msgDiv   = document.getElementById('msg');
+
+        cpfInput.addEventListener('input', () => {
+            let v = cpfInput.value.replace(/\D/g, '').slice(0, 11);
+            if (v.length > 9) v = v.replace(/(\d{3})(\d{3})(\d{3})(\d{1,2})/, '$1.$2.$3-$4');
+            else if (v.length > 6) v = v.replace(/(\d{3})(\d{3})(\d{1,3})/, '$1.$2.$3');
+            else if (v.length > 3) v = v.replace(/(\d{3})(\d{1,3})/, '$1.$2');
+            cpfInput.value = v;
+        });
+
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            msgDiv.className = 'msg';
+            msgDiv.textContent = '';
+
+            try {
+                const res  = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        cpf:      cpfInput.value,
+                        password: document.getElementById('password').value
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    window.location.href = '/';
+                } else {
+                    msgDiv.className  = 'msg error';
+                    msgDiv.textContent = data.message || 'Erro ao fazer login';
+                }
+            } catch (err) {
+                msgDiv.className  = 'msg error';
+                msgDiv.textContent = 'Erro de conexão com o servidor';
+            }
+        });
+    </script>
+</body>
+</html>

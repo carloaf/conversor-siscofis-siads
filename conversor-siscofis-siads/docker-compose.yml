@@ -11,6 +11,7 @@ services:
     volumes:
       - ./uploads:/usr/src/app/uploads
       - ./output:/usr/src/app/output
+      - ./data:/usr/src/app/data
     environment:
       - NODE_ENV=production
       - PORT=3000

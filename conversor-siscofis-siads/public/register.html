@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cadastro — Conversor-SISCOFIS-SIADS</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #7A8C42 0%, #4A5C28 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 30px 20px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+            width: 100%;
+            max-width: 620px;
+        }
+
+        .brand {
+            text-align: center;
+            margin-bottom: 28px;
+        }
+        .brand h1 { font-size: 22px; color: #333; margin-bottom: 4px; }
+        .brand p  { font-size: 12px; color: #888; }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+        }
+
+        .field { margin-bottom: 14px; }
+        .field label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: #555;
+            margin-bottom: 5px;
+        }
+        .field input,
+        .field select {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1.5px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.2s;
+            background: white;
+        }
+        .field input:focus,
+        .field select:focus { outline: none; border-color: #6B7C3A; }
+
+        .section-title {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: #999;
+            margin: 18px 0 12px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 4px;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #7A8C42 0%, #4A5C28 100%);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: all 0.2s;
+        }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 5px 20px rgba(107,124,58,0.4); }
+
+        .msg {
+            margin-top: 14px;
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            display: none;
+        }
+        .msg.error   { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; display: block; }
+        .msg.success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; display: block; }
+
+        .footer {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 13px;
+            color: #888;
+        }
+        .footer a { color: #6B7C3A; text-decoration: none; font-weight: 600; }
+        .footer a:hover { text-decoration: underline; }
+
+        @media (max-width: 480px) {
+            .grid-2 { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="brand">
+            <h1>📋 Cadastro de Usuário</h1>
+            <p>Conversor-SISCOFIS-SIADS</p>
+        </div>
+
+        <form id="registerForm">
+            <div class="section-title">Identificação Militar</div>
+
+            <div class="field">
+                <label for="postoGrad">Posto / Graduação *</label>
+                <select id="postoGrad" required>
+                    <option value="">— Selecione —</option>
+                    <optgroup label="Oficiais Superiores">
+                        <option value="Coronel">Coronel</option>
+                        <option value="Tenente-Coronel">Tenente-Coronel</option>
+                        <option value="Major">Major</option>
+                    </optgroup>
+                    <optgroup label="Oficiais Subalternos / Intermediários">
+                        <option value="Capitão">Capitão</option>
+                        <option value="Primeiro-Tenente">Primeiro-Tenente</option>
+                        <option value="Segundo-Tenente">Segundo-Tenente</option>
+                        <option value="Aspirante a Oficial">Aspirante a Oficial</option>
+                    </optgroup>
+                    <optgroup label="Praças">
+                        <option value="Subtenente">Subtenente</option>
+                        <option value="Primeiro-Sargento">Primeiro-Sargento</option>
+                        <option value="Segundo-Sargento">Segundo-Sargento</option>
+                        <option value="Terceiro-Sargento">Terceiro-Sargento</option>
+                        <option value="Cabo">Cabo</option>
+                        <option value="Soldado">Soldado</option>
+                    </optgroup>
+                </select>
+            </div>
+
+            <div class="grid-2">
+                <div class="field">
+                    <label for="nomeGuerra">Nome de Guerra *</label>
+                    <input type="text" id="nomeGuerra" placeholder="Ex: SILVA" maxlength="30" required>
+                </div>
+                <div class="field">
+                    <label for="idtMilitar">Identidade Militar *</label>
+                    <input type="text" id="idtMilitar" placeholder="Ex: 123456-7" maxlength="20" required>
+                </div>
+            </div>
+
+            <div class="field">
+                <label for="nomeCompleto">Nome Completo *</label>
+                <input type="text" id="nomeCompleto" placeholder="Nome completo conforme documento" maxlength="100" required>
+            </div>
+
+            <div class="section-title">Dados da Organização</div>
+
+            <div class="grid-2">
+                <div class="field">
+                    <label for="om">OM (Organização Militar) *</label>
+                    <input type="text" id="om" placeholder="Ex: HMAB" maxlength="60" required>
+                </div>
+                <div class="field">
+                    <label for="cidade">Cidade *</label>
+                    <input type="text" id="cidade" placeholder="Ex: Brasília" maxlength="60" required>
+                </div>
+            </div>
+
+            <div class="section-title">Acesso ao Sistema</div>
+
+            <div class="grid-2">
+                <div class="field">
+                    <label for="cpf">CPF *</label>
+                    <input type="text" id="cpf" placeholder="000.000.000-00" maxlength="14" autocomplete="off" required>
+                </div>
+                <div class="field">
+                    <label for="email">E-mail *</label>
+                    <input type="email" id="email" placeholder="nome@exercito.eb.mil.br" maxlength="100" required>
+                </div>
+            </div>
+
+            <div class="grid-2">
+                <div class="field">
+                    <label for="password">Senha * (mín. 6 caracteres)</label>
+                    <input type="password" id="password" placeholder="••••••••" required>
+                </div>
+                <div class="field">
+                    <label for="confirmPassword">Confirmar Senha *</label>
+                    <input type="password" id="confirmPassword" placeholder="••••••••" required>
+                </div>
+            </div>
+
+            <button type="submit" class="btn">Cadastrar</button>
+        </form>
+
+        <div class="msg" id="msg"></div>
+
+        <div class="footer">
+            Já tem cadastro? <a href="/login.html">Entrar</a>
+        </div>
+    </div>
+
+    <script>
+        const cpfInput = document.getElementById('cpf');
+        const msgDiv   = document.getElementById('msg');
+
+        cpfInput.addEventListener('input', () => {
+            let v = cpfInput.value.replace(/\D/g, '').slice(0, 11);
+            if (v.length > 9) v = v.replace(/(\d{3})(\d{3})(\d{3})(\d{1,2})/, '$1.$2.$3-$4');
+            else if (v.length > 6) v = v.replace(/(\d{3})(\d{3})(\d{1,3})/, '$1.$2.$3');
+            else if (v.length > 3) v = v.replace(/(\d{3})(\d{1,3})/, '$1.$2');
+            cpfInput.value = v;
+        });
+
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            msgDiv.className  = 'msg';
+            msgDiv.textContent = '';
+
+            const payload = {
+                nomeCompleto:    document.getElementById('nomeCompleto').value,
+                nomeGuerra:      document.getElementById('nomeGuerra').value,
+                idtMilitar:      document.getElementById('idtMilitar').value,
+                postoGrad:       document.getElementById('postoGrad').value,
+                cpf:             document.getElementById('cpf').value,
+                om:              document.getElementById('om').value,
+                email:           document.getElementById('email').value,
+                cidade:          document.getElementById('cidade').value,
+                password:        document.getElementById('password').value,
+                confirmPassword: document.getElementById('confirmPassword').value
+            };
+
+            try {
+                const res  = await fetch('/api/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (data.success) {
+                    msgDiv.className  = 'msg success';
+                    msgDiv.textContent = 'Cadastro realizado com sucesso! Redirecionando para login...';
+                    setTimeout(() => { window.location.href = '/login.html'; }, 2000);
+                } else {
+                    msgDiv.className  = 'msg error';
+                    msgDiv.textContent = data.message || 'Erro ao realizar cadastro';
+                }
+            } catch (err) {
+                msgDiv.className  = 'msg error';
+                msgDiv.textContent = 'Erro de conexão com o servidor';
+            }
+        });
+    </script>
+</body>
+</html>
