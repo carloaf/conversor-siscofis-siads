@@ -1,15 +1,18 @@
-FROM node:14
+FROM node:14-alpine
 
 # Set the working directory
 WORKDIR /usr/src/app
 
-# Copy package.json and package-lock.json
+# Instala dependências do sistema necessárias para pdfjs/canvas
+RUN apk add --no-cache python3 make g++
+
+# Copia apenas os arquivos de dependências primeiro (cache layer)
 COPY package*.json ./
 
-# Install dependencies
-RUN npm install
+# Instala apenas dependências de produção
+RUN npm install --only=production
 
-# Copy the rest of the application code
+# Copia o restante do código
 COPY . .
 
 # Expose the port the app runs on
