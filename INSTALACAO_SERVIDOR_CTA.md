@@ -16,9 +16,150 @@
 | SO | Linux (Ubuntu/Debian) |
 | Docker | v29.4.3 |
 | Docker Compose | v5.1.3 (plugin) |
+| Git | `/usr/bin/git` |
 | Aplicação | `/opt/conversor-siscofis-siads/` |
 | Container | `conversor-siscofis-siads` |
 | Porta | 3000/TCP |
+
+## Situação Validada em 13/05/2026
+
+- O servidor já possui Git instalado em `/usr/bin/git`; não é necessário instalar o pacote.
+- O deploy em produção foi convertido para clone Git em `/opt/conversor-siscofis-siads/`.
+- O comando `git pull --ff-only origin dev` já funciona no servidor.
+- A aplicação Docker roda a partir de `/opt/conversor-siscofis-siads/conversor-siscofis-siads/`.
+- O repositório é público em HTTPS; para leitura, o servidor não depende de credencial adicional.
+- No servidor, a porta `22/TCP` para `github.com` está bloqueada, mas SSH para `ssh.github.com:443` funciona caso a deploy key precise ser usada no futuro.
+
+## Habilitar Deploy por Git
+
+### 1. Chave de deploy criada no servidor
+
+Foi criada uma chave dedicada para o usuário `suporte` em:
+
+```bash
+/home/suporte/.ssh/id_ed25519_github_deploy
+```
+
+Fingerprint da chave pública:
+
+```bash
+SHA256:xFL1nlZxShAd75LUuCr+1drXyJowrmykHAfdFVUxWzU
+```
+
+Para copiar a chave pública e cadastrá-la no GitHub:
+
+```bash
+tsh ssh --insecure suporte@VM-7CTA-11CGCFEX-APP-CONVERSOR-SISCOFIS-SIADS-PRODUCAO \
+    'cat ~/.ssh/id_ed25519_github_deploy.pub'
+```
+
+Cadastrar em `Settings > Deploy keys` do repositório `carloaf/conversor-siscofis-siads`.
+Usar permissão somente leitura se o servidor apenas fizer `pull`.
+
+### 2. Configuração SSH do servidor para usar porta 443
+
+O usuário `suporte` foi configurado para acessar o GitHub por `ssh.github.com:443`:
+
+```sshconfig
+Host github.com
+    HostName ssh.github.com
+    Port 443
+    User git
+    IdentityFile ~/.ssh/id_ed25519_github_deploy
+    IdentitiesOnly yes
+```
+
+### 3. Converter a pasta atual em um clone Git
+
+Como o repositório é público em HTTPS, o servidor consegue fazer `git pull` sem credencial adicional. A deploy key acima continua válida como opção de endurecimento, mas não é obrigatória para leitura.
+
+Substituir a cópia extraída por um clone real do repositório, preservando os dados persistentes:
+
+```bash
+tsh ssh --insecure root@VM-7CTA-11CGCFEX-APP-CONVERSOR-SISCOFIS-SIADS-PRODUCAO bash << 'EOF'
+set -e
+
+cd /opt
+backup_dir="conversor-siscofis-siads.backup-$(date +%Y%m%d-%H%M%S)"
+mv conversor-siscofis-siads "$backup_dir"
+
+git clone -b dev https://github.com/carloaf/conversor-siscofis-siads.git \
+    /opt/conversor-siscofis-siads
+
+rm -rf /opt/conversor-siscofis-siads/conversor-siscofis-siads/data \
+       /opt/conversor-siscofis-siads/conversor-siscofis-siads/output \
+       /opt/conversor-siscofis-siads/conversor-siscofis-siads/uploads
+
+cp -a "/opt/$backup_dir/data" /opt/conversor-siscofis-siads/conversor-siscofis-siads/
+cp -a "/opt/$backup_dir/output" /opt/conversor-siscofis-siads/conversor-siscofis-siads/
+cp -a "/opt/$backup_dir/uploads" /opt/conversor-siscofis-siads/conversor-siscofis-siads/
+
+chown -R suporte:suporte /opt/conversor-siscofis-siads
+EOF
+```
+
+### 4. Atualizar por git pull
+
+Com a pasta já clonada:
+
+```bash
+tsh ssh --insecure suporte@VM-7CTA-11CGCFEX-APP-CONVERSOR-SISCOFIS-SIADS-PRODUCAO \
+    'cd /opt/conversor-siscofis-siads && git pull --ff-only origin dev && cd conversor-siscofis-siads && docker compose up --build -d'
+```
+
+Se o `pull` falhar com `Permission denied (publickey)`, a deploy key ainda não foi cadastrada no GitHub ou foi cadastrada no repositório errado.
+
+### 4.1 Fluxo recomendado: commit local, push e atualização no servidor
+
+Fluxo operacional para futuras alterações:
+
+```bash
+# 1. Na máquina local, revisar alterações
+cd /home/augusto/workspace/SIADS
+git status
+
+# 2. Commitar e enviar para o GitHub
+git add conversor-siscofis-siads/Dockerfile \
+        conversor-siscofis-siads/docker-compose.yml \
+        README.md \
+        GUIA_PRATICAS_SEGURAS.md \
+        .github/prompts/prompt_ai.prompt.md \
+        INSTALACAO_SERVIDOR_CTA.md
+git commit -m "Corrige deploy Docker no CTA"
+git push origin dev
+
+# 3. No servidor, atualizar código e aplicar deploy
+tsh ssh --insecure suporte@VM-7CTA-11CGCFEX-APP-CONVERSOR-SISCOFIS-SIADS-PRODUCAO \
+    'cd /opt/conversor-siscofis-siads && git pull --ff-only origin dev && cd conversor-siscofis-siads && docker compose up --build -d'
+```
+
+Validação após o `pull`:
+
+```bash
+tsh ssh --insecure suporte@VM-7CTA-11CGCFEX-APP-CONVERSOR-SISCOFIS-SIADS-PRODUCAO \
+    'docker ps --filter name=conversor-siscofis-siads --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" && curl -I -s http://localhost:3000 | head -n 8'
+```
+
+### 5. Recuperar build e publicação da porta 3000
+
+No servidor CTA, o `Dockerfile` não deve instalar pacotes Alpine extras para esse projeto e o `docker-compose.yml` precisa usar `build.network: host`, pois o build padrão do Docker não resolve `registry.npmjs.org` nesse ambiente.
+
+Se a aplicação subir, mas a porta `3000` não aparecer em `docker ps`, o daemon Docker perdeu as chains de NAT do `iptables`. Recuperação:
+
+```bash
+tsh ssh --insecure root@VM-7CTA-11CGCFEX-APP-CONVERSOR-SISCOFIS-SIADS-PRODUCAO \
+    'systemctl restart docker'
+
+tsh ssh --insecure suporte@VM-7CTA-11CGCFEX-APP-CONVERSOR-SISCOFIS-SIADS-PRODUCAO \
+    'cd /opt/conversor-siscofis-siads/conversor-siscofis-siads && docker compose down && docker compose up -d --force-recreate'
+```
+
+Validação esperada:
+
+```bash
+tsh ssh --insecure suporte@VM-7CTA-11CGCFEX-APP-CONVERSOR-SISCOFIS-SIADS-PRODUCAO \
+    'docker ps --filter name=conversor-siscofis-siads --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" && curl -I -s http://10.166.68.89:3000 | head -n 8'
+```
 
 ---
 
@@ -155,25 +296,11 @@ tsh login --proxy=teleport.7cta.eb.mil.br:443 --user=aloysio.souza@eb.mil.br --i
 Para atualizar a aplicação no servidor:
 
 ```bash
-cd /home/sonnote/Documents/SIADS
-
-# 1. Empacotar
-tar -czf /tmp/conversor-siscofis-siads.tar.gz \
-    --exclude="node_modules" --exclude=".git" --exclude="uploads/*" \
-    conversor-siscofis-siads/
-
-# 2. Copiar para o servidor
-tsh scp --insecure /tmp/conversor-siscofis-siads.tar.gz \
-    suporte@VM-7CTA-11CGCFEX-APP-CONVERSOR-SISCOFIS-SIADS-PRODUCAO:/tmp/
-
-# 3. Reinstalar no servidor
-tsh ssh --insecure root@VM-7CTA-11CGCFEX-APP-CONVERSOR-SISCOFIS-SIADS-PRODUCAO << 'EOF'
-cd /opt/conversor-siscofis-siads
-docker compose down
-tar -xzf /tmp/conversor-siscofis-siads.tar.gz -C /opt/
-docker compose up --build -d
-EOF
+tsh ssh --insecure suporte@VM-7CTA-11CGCFEX-APP-CONVERSOR-SISCOFIS-SIADS-PRODUCAO \
+    'cd /opt/conversor-siscofis-siads && git pull --ff-only origin dev && cd conversor-siscofis-siads && docker compose up --build -d'
 ```
+
+Se houver mudanças apenas de infraestrutura Docker e o container ficar sem portas publicadas, usar a recuperação da seção 5 antes de repetir o `docker compose up -d`.
 
 ---
 
@@ -181,14 +308,17 @@ EOF
 
 ```
 /opt/conversor-siscofis-siads/
-├── src/                    # Código-fonte Node.js
-├── public/                 # Interface web (HTML)
-├── config/                 # Configurações da app
-├── templates/              # Template de saída TXT
-├── uploads/                # PDFs enviados (bind-mount)
-├── output/                 # TXTs gerados (bind-mount)
-├── data/
-│   └── users.json          # Usuários cadastrados (bind-mount)
-├── Dockerfile
-└── docker-compose.yml
+├── .git/                   # Clone Git para git pull
+├── conversor-siscofis-siads/
+│   ├── src/                # Código-fonte Node.js
+│   ├── public/             # Interface web (HTML)
+│   ├── config/             # Configurações da app
+│   ├── templates/          # Template de saída TXT
+│   ├── uploads/            # PDFs enviados (bind-mount)
+│   ├── output/             # TXTs gerados (bind-mount)
+│   ├── data/
+│   │   └── users.json      # Usuários cadastrados (bind-mount)
+│   ├── Dockerfile
+│   └── docker-compose.yml
+└── INSTALACAO_SERVIDOR_CTA.md
 ```

@@ -65,6 +65,35 @@ Se encontrado, aplicar o script de correção (ver `prompt_ai.prompt.md`).
 docker compose down && docker compose up --build -d
 ```
 
+### 5. Operação no servidor CTA
+
+No servidor, o repositório Git fica em `/opt/conversor-siscofis-siads` e a aplicação Docker em `/opt/conversor-siscofis-siads/conversor-siscofis-siads`.
+
+Atualização completa:
+
+```bash
+tsh ssh --insecure suporte@VM-7CTA-11CGCFEX-APP-CONVERSOR-SISCOFIS-SIADS-PRODUCAO \
+    'cd /opt/conversor-siscofis-siads && git pull --ff-only origin dev && cd conversor-siscofis-siads && docker compose up --build -d'
+```
+
+Se o container subir sem publicar a porta `3000`, recriar o serviço após reiniciar o Docker no host:
+
+```bash
+tsh ssh --insecure root@VM-7CTA-11CGCFEX-APP-CONVERSOR-SISCOFIS-SIADS-PRODUCAO \
+    'systemctl restart docker'
+
+tsh ssh --insecure suporte@VM-7CTA-11CGCFEX-APP-CONVERSOR-SISCOFIS-SIADS-PRODUCAO \
+    'cd /opt/conversor-siscofis-siads/conversor-siscofis-siads && docker compose down && docker compose up -d --force-recreate'
+```
+
+Validação esperada:
+
+```bash
+curl -I http://10.166.68.89:3000
+```
+
+Resposta esperada: `HTTP/1.1 302 Found` com redirecionamento para `/login.html`.
+
 ---
 
 ## 📋 Formato de Saída (H/D/T)

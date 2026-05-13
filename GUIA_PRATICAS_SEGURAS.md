@@ -69,10 +69,33 @@ Documento de referência para operação segura, rastreável e consistente do si
   curl -s http://localhost:3000/health
   ```
 - Lembrar que apenas `output/` e `uploads/` são bind-mounts — alterações em `src/` exigem rebuild.
+- No servidor CTA, executar o deploy a partir de `/opt/conversor-siscofis-siads/conversor-siscofis-siads`, porque o clone Git fica um nível acima.
+- Se `docker compose up -d` terminar com o container rodando, mas sem `0.0.0.0:3000->3000/tcp` em `docker ps`, reiniciar o daemon Docker e recriar o serviço.
+- Manter `build.network: host` no `docker-compose.yml` do servidor para evitar falhas de DNS do `npm` durante o build.
 
 ### ❌ Evite
 - Editar arquivos `src/` e esperar que o container reflita a mudança sem rebuild.
 - Usar `docker compose restart` sozinho — não recompila a imagem.
+- Assumir que `docker ps` sem coluna `PORTS` publicada significa apenas problema de firewall; nesse caso o publish falhou no próprio host.
+
+### Recuperação rápida da porta 3000
+
+Quando o acesso a `http://10.166.68.89:3000` falhar com `não conseguiu se conectar`, validar nesta ordem:
+
+```bash
+tsh ssh --insecure suporte@VM-7CTA-11CGCFEX-APP-CONVERSOR-SISCOFIS-SIADS-PRODUCAO \
+  'docker ps --filter name=conversor-siscofis-siads --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" && curl -I -s http://localhost:3000 | head -n 8'
+```
+
+Se o container estiver sem porta publicada, executar:
+
+```bash
+tsh ssh --insecure root@VM-7CTA-11CGCFEX-APP-CONVERSOR-SISCOFIS-SIADS-PRODUCAO \
+  'systemctl restart docker'
+
+tsh ssh --insecure suporte@VM-7CTA-11CGCFEX-APP-CONVERSOR-SISCOFIS-SIADS-PRODUCAO \
+  'cd /opt/conversor-siscofis-siads/conversor-siscofis-siads && docker compose down && docker compose up -d --force-recreate'
+```
 
 ---
 
@@ -134,6 +157,8 @@ Detecção automática pelo sistema. Caso nenhum padrão seja encontrado, assume
 | 11/05/2026 | Bloco OBSERVAÇÕES/rodapé no arquivo TXT causava rejeição no SIADS | Removido `formatObservacoes()` — arquivo TXT termina na linha T |
 | 11/05/2026 | Linha H usava `CO` fixo para qualquer tipo de inventário | Detecção automática: `CO` (Material de Consumo) ou `PE` (Material Permanente) pelo título do PDF |
 | 11/05/2026 | Página web não registrava autor da conversão | Campos Nome e CPF adicionados ao formulário; card de confirmação exibido após conversão |
+| 13/05/2026 | Build Docker falhava no servidor CTA por DNS do `npm` dentro da rede padrão do Docker | Removido `apk add` desnecessário do `Dockerfile` e configurado `build.network: host` no Compose |
+| 13/05/2026 | Aplicação inacessível em `10.166.68.89:3000` apesar do container em execução | Reinício do daemon Docker e recriação do serviço para restaurar a publicação da porta `3000` |
 
 ---
 

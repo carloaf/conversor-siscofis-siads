@@ -3,9 +3,6 @@ FROM node:14-alpine
 # Set the working directory
 WORKDIR /usr/src/app
 
-# Instala dependências do sistema necessárias para pdfjs/canvas
-RUN apk add --no-cache python3 make g++
-
 # Copia apenas os arquivos de dependências primeiro (cache layer)
 COPY package*.json ./
 

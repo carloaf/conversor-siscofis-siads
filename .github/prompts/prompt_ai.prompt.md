@@ -114,6 +114,37 @@ docker compose down && docker compose up --build -d
 # O diretório output/ é bind-mount — arquivos .txt ficam visíveis no host imediatamente
 ```
 
+### Operação no servidor CTA
+
+- O clone Git do servidor fica em `/opt/conversor-siscofis-siads`.
+- A aplicação Docker fica em `/opt/conversor-siscofis-siads/conversor-siscofis-siads`.
+- O `docker-compose.yml` do projeto usa `build.network: host` para contornar falhas de DNS do `npm` durante o build no servidor.
+
+Comando operacional completo:
+
+```bash
+tsh ssh --insecure suporte@VM-7CTA-11CGCFEX-APP-CONVERSOR-SISCOFIS-SIADS-PRODUCAO \
+	'cd /opt/conversor-siscofis-siads && git pull --ff-only origin dev && cd conversor-siscofis-siads && docker compose up --build -d'
+```
+
+Se a aplicação ficar inacessível em `http://10.166.68.89:3000` e `docker ps` mostrar o container sem a coluna de portas publicada, recuperar assim:
+
+```bash
+tsh ssh --insecure root@VM-7CTA-11CGCFEX-APP-CONVERSOR-SISCOFIS-SIADS-PRODUCAO \
+	'systemctl restart docker'
+
+tsh ssh --insecure suporte@VM-7CTA-11CGCFEX-APP-CONVERSOR-SISCOFIS-SIADS-PRODUCAO \
+	'cd /opt/conversor-siscofis-siads/conversor-siscofis-siads && docker compose down && docker compose up -d --force-recreate'
+```
+
+Validação:
+
+```bash
+curl -I http://10.166.68.89:3000
+```
+
+Resposta esperada: `HTTP/1.1 302 Found` com `Location: /login.html`.
+
 ---
 
 ## ✅ ARQUIVOS GERADOS
