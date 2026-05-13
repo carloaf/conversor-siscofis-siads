@@ -1,7 +1,8 @@
 const PdfExtractorService = require('../services/pdfExtractorService');
 const TxtFormatterService = require('../services/txtFormatterService');
+const { logConversion }   = require('../services/reportService');
 const path = require('path');
-const fs = require('fs');
+const fs   = require('fs');
 
 class UploadController {
     constructor() {
@@ -55,7 +56,18 @@ class UploadController {
             
             console.log(`3. Salvando arquivo TXT...`);
             this.txtFormatterService.saveToFile(formattedOutput, outputPath);
-            
+
+            // Registrar conversão para relatório admin
+            const sessionUser = req.session && req.session.user;
+            logConversion({
+                userCpf:    sessionUser ? sessionUser.cpf       : 'desconhecido',
+                userName:   sessionUser ? sessionUser.nomeGuerra : 'desconhecido',
+                userOM:     sessionUser ? sessionUser.om         : 'desconhecida',
+                pdfName:    req.file.originalname,
+                outputFile: outputFileName,
+                itemsCount: extractedData.items ? extractedData.items.length : 0
+            });
+
             // Limpar arquivo PDF temporário
             console.log(`4. Limpando arquivos temporários...`);
             fs.unlinkSync(pdfFilePath);

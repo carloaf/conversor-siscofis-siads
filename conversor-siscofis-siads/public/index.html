@@ -229,6 +229,28 @@
             font-size: 14px;
             color: #1e2d09;
         }
+
+        .btn-download {
+            display: block;
+            margin: 14px auto 0;
+            width: 65%;
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #1a6fa8 0%, #0d4a75 100%);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            text-align: center;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            letter-spacing: 0.3px;
+        }
+        .btn-download:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 18px rgba(13, 74, 117, 0.45);
+        }
     </style>
 </head>
 <body>
@@ -393,9 +415,6 @@
                         <strong>Arquivo gerado:</strong> ${data.data.outputFile}<br>
                         <strong>Total de itens:</strong> ${data.data.itemsCount}<br>
                         <strong>Depósito:</strong> ${data.data.extractedData.deposito}<br>
-                        <a href="${data.data.outputPath}" class="download-link" download>
-                            📥 Baixar arquivo TXT
-                        </a>
                         <div class="completion-card">
                             <strong>Registro de Conversão</strong>
                             Arquivo gerado pelo sistema Conversor-SISCOFIS-SIADS<br>
@@ -403,6 +422,9 @@
                             Autor: ${autor}<br>
                             CPF: ${cpf}
                         </div>
+                        <a href="${data.data.outputPath}" class="btn-download" download>
+                            📥 Baixar arquivo TXT
+                        </a>
                     `;
                     showResult('success', message);
                 } else {
