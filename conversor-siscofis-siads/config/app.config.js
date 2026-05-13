@@ -1,5 +1,5 @@
 module.exports = {
-    PORT: process.env.PORT || 3000,
+    PORT:           process.env.PORT       || 3000,
     SESSION_SECRET: process.env.SESSION_SECRET || 'siads-siscofis-secret-change-in-prod',
     UPLOAD_DIR: 'uploads/',
     OUTPUT_DIR: 'output/',

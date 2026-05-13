@@ -1,8 +1,9 @@
-const express = require('express');
-const path = require('path');
-const session = require('express-session');
+const express      = require('express');
+const path         = require('path');
+const session      = require('express-session');
 const uploadRoutes = require('./routes/uploadRoutes');
 const authRoutes   = require('./routes/authRoutes');
+const adminRoutes  = require('./routes/adminRoutes');
 const { requireAuth } = require('./middlewares/authMiddleware');
 const appConfig = require('../config/app.config');
 
@@ -13,13 +14,17 @@ const PORT = appConfig.PORT;
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Sessão
+// Sessão única para toda a aplicação
 app.use(session({
     secret: appConfig.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
-    cookie: { secure: false, httpOnly: true, maxAge: 8 * 60 * 60 * 1000 } // 8h
+    name: 'siads.sid',
+    cookie: { secure: false, httpOnly: true, maxAge: 8 * 60 * 60 * 1000 }
 }));
+
+// Rotas admin (antes do static, sem autenticação de usuário)
+app.use('/admin', adminRoutes);
 
 // Página principal — exige autenticação (deve vir ANTES do static middleware)
 app.get('/', requireAuth, (req, res) => {
@@ -57,6 +62,6 @@ app.listen(PORT, () => {
     console.log(`Conversor-SISCOFIS-SIADS is running!`);
     console.log(`Port: ${PORT}`);
     console.log(`URL: http://localhost:${PORT}`);
-    console.log(`Health check: http://localhost:${PORT}/health`);
+    console.log(`Admin: http://localhost:${PORT}/admin`);
     console.log(`========================================`);
 });

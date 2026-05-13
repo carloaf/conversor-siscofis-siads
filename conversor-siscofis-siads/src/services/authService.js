@@ -59,6 +59,7 @@ class AuthService {
             om:           data.om.trim().toUpperCase(),
             email:        data.email.trim().toLowerCase(),
             cidade:       data.cidade.trim(),
+            role:         'user',
             passwordHash,
             createdAt:    new Date().toISOString()
         };
