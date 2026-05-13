@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel Admin — Conversor SISCOFIS-SIADS</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; min-height: 100vh; }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #1a252f 100%);
+            color: white; padding: 0 28px;
+            display: flex; align-items: center; justify-content: space-between;
+            height: 60px; box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+        .header-left { display: flex; align-items: center; gap: 12px; }
+        .header-left h1 { font-size: 18px; font-weight: 600; }
+        .header-left .role-badge {
+            font-size: 10px; padding: 2px 8px; border-radius: 10px; font-weight: 700;
+            letter-spacing: 0.5px; text-transform: uppercase;
+        }
+        .role-badge.admin   { background: #e74c3c; color: white; }
+        .role-badge.manager { background: #e67e22; color: white; }
+        .header-right { display: flex; align-items: center; gap: 16px; font-size: 13px; }
+        .admin-name { color: rgba(255,255,255,0.85); }
+        .btn-logout { background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2); color: white; padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 12px; }
+        .btn-logout:hover { background: rgba(255,255,255,0.22); }
+
+        .content { padding: 28px; max-width: 1400px; margin: 0 auto; }
+
+        .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 28px; }
+        .summary-card { background: white; border-radius: 12px; padding: 20px 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); border-left: 4px solid; }
+        .summary-card.blue   { border-color: #3498db; }
+        .summary-card.green  { border-color: #27ae60; }
+        .summary-card.orange { border-color: #e67e22; }
+        .summary-card.purple { border-color: #8e44ad; }
+        .summary-card .label { font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+        .summary-card .value { font-size: 32px; font-weight: 700; color: #2c3e50; }
+
+        .tabs { display: flex; gap: 4px; margin-bottom: 20px; }
+        .tab { padding: 9px 20px; border-radius: 8px 8px 0 0; cursor: pointer; font-size: 14px; font-weight: 500; background: #e0e4ea; color: #666; border: none; transition: all 0.2s; }
+        .tab.active { background: white; color: #2c3e50; box-shadow: 0 2px 8px rgba(0,0,0,0.07); }
+
+        .panel { background: white; border-radius: 0 12px 12px 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); padding: 24px; display: none; }
+        .panel.active { display: block; }
+        .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+        .panel-header h2 { font-size: 16px; color: #2c3e50; }
+        .search-input { padding: 7px 12px; border: 1.5px solid #ddd; border-radius: 8px; font-size: 13px; width: 240px; }
+        .search-input:focus { outline: none; border-color: #2c3e50; }
+
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        th { background: #f7f9fc; text-align: left; padding: 10px 12px; font-weight: 600; color: #555; border-bottom: 2px solid #e8ecf0; font-size: 12px; text-transform: uppercase; letter-spacing: 0.4px; }
+        td { padding: 10px 12px; border-bottom: 1px solid #f0f2f5; color: #444; vertical-align: middle; }
+        tr:hover td { background: #fafbfc; }
+        tr:last-child td { border-bottom: none; }
+
+        .badge { display: inline-block; padding: 3px 9px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+        .badge-admin   { background: #fdecea; color: #c0392b; }
+        .badge-manager { background: #fef3e2; color: #d68910; }
+        .badge-user    { background: #e8f4fd; color: #2980b9; }
+
+        .actions { display: flex; gap: 6px; }
+        .btn-icon { border: none; padding: 5px 8px; border-radius: 6px; cursor: pointer; font-size: 14px; transition: background 0.2s; }
+        .btn-edit  { background: #e8f4fd; color: #2980b9; }
+        .btn-edit:hover { background: #bee3f8; }
+        .btn-role  { background: #fef3e2; color: #d68910; }
+        .btn-role:hover { background: #fde8b1; }
+        .btn-del   { background: #fdecea; color: #c0392b; }
+        .btn-del:hover { background: #f5c6cb; }
+
+        .empty { text-align: center; padding: 40px; color: #aaa; font-size: 14px; }
+        .om-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+        .om-card { border: 1px solid #e8ecf0; border-radius: 10px; padding: 16px 20px; background: #fafbfc; display: flex; align-items: center; gap: 14px; }
+        .om-icon { font-size: 28px; }
+        .om-info .om-name { font-weight: 600; color: #2c3e50; font-size: 14px; margin-bottom: 4px; }
+        .om-info .om-stats { font-size: 12px; color: #888; }
+        .loading { text-align: center; padding: 60px; color: #aaa; }
+        .spinner { display: inline-block; width: 30px; height: 30px; border: 3px solid #e0e4ea; border-top-color: #2c3e50; border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 10px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* MODAL */
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; }
+        .modal-overlay.open { display: flex; }
+        .modal { background: white; border-radius: 16px; padding: 28px; width: 100%; max-width: 500px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+        .modal h3 { font-size: 17px; color: #2c3e50; margin-bottom: 20px; }
+        .modal .field { margin-bottom: 14px; }
+        .modal .field label { display: block; font-size: 12px; font-weight: 600; color: #555; margin-bottom: 4px; }
+        .modal .field input, .modal .field select {
+            width: 100%; padding: 9px 12px; border: 1.5px solid #ddd; border-radius: 8px; font-size: 14px;
+        }
+        .modal .field input:focus, .modal .field select:focus { outline: none; border-color: #2c3e50; }
+        .modal-footer { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+        .btn-cancel { padding: 9px 20px; border: 1.5px solid #ddd; border-radius: 8px; background: white; cursor: pointer; font-size: 14px; }
+        .btn-save { padding: 9px 24px; background: #2c3e50; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; }
+        .btn-save:hover { background: #1a252f; }
+        .modal .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .msg-modal { margin-top: 12px; padding: 8px 12px; border-radius: 6px; font-size: 13px; display: none; }
+        .msg-modal.error { background: #fdecea; color: #c0392b; display: block; }
+        .msg-modal.success { background: #d4edda; color: #155724; display: block; }
+
+        footer { text-align: center; padding: 24px; font-style: italic; font-size: 11px; color: #bbb; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <div class="header-left">
+        <span style="font-size:22px;">🛡️</span>
+        <div style="display:flex;align-items:center;gap:8px;">
+            <h1>Painel Administrativo</h1>
+            <span class="role-badge" id="roleBadge"></span>
+        </div>
+    </div>
+    <div class="header-right">
+        <span class="admin-name" id="adminName">—</span>
+        <button class="btn-logout" onclick="logout()">Sair</button>
+    </div>
+</div>
+
+<div class="content">
+    <div class="summary-grid" id="summaryGrid">
+        <div class="loading"><div class="spinner"></div><br>Carregando...</div>
+    </div>
+
+    <div class="tabs" id="tabsContainer"></div>
+
+    <div class="panel active" id="panel-users">
+        <div class="panel-header">
+            <h2>Usuários Cadastrados</h2>
+            <input class="search-input" type="text" placeholder="Buscar por nome, CPF ou OM..." oninput="filterTable('tbl-users', this.value)">
+        </div>
+        <table id="tbl-users">
+            <thead>
+                <tr>
+                    <th>Nome de Guerra</th><th>Posto/Grad</th><th>CPF</th>
+                    <th>OM</th><th>E-mail</th><th>Perfil</th>
+                    <th>Conversões</th><th>Itens</th><th>Cadastro</th>
+                    <th id="th-actions"></th>
+                </tr>
+            </thead>
+            <tbody id="body-users"></tbody>
+        </table>
+    </div>
+
+    <div class="panel" id="panel-conversions">
+        <div class="panel-header">
+            <h2>Histórico de Conversões</h2>
+            <input class="search-input" type="text" placeholder="Buscar..." oninput="filterTable('tbl-conv', this.value)">
+        </div>
+        <table id="tbl-conv">
+            <thead>
+                <tr><th>Data/Hora</th><th>Usuário</th><th>OM</th><th>PDF Enviado</th><th>Arquivo Gerado</th><th>Itens</th></tr>
+            </thead>
+            <tbody id="body-conv"></tbody>
+        </table>
+    </div>
+
+    <div class="panel" id="panel-om">
+        <div class="panel-header"><h2>Utilização por Organização Militar</h2></div>
+        <div class="om-grid" id="om-grid"></div>
+    </div>
+</div>
+
+<!-- MODAL EDITAR USUÁRIO -->
+<div class="modal-overlay" id="modalEdit">
+    <div class="modal">
+        <h3>✏️ Editar Usuário</h3>
+        <input type="hidden" id="editId">
+        <div class="grid-2">
+            <div class="field"><label>Nome Completo</label><input type="text" id="editNomeCompleto"></div>
+            <div class="field"><label>Nome de Guerra</label><input type="text" id="editNomeGuerra"></div>
+            <div class="field"><label>Posto/Graduação</label><input type="text" id="editPostoGrad"></div>
+            <div class="field"><label>Ident. Militar</label><input type="text" id="editIdtMilitar"></div>
+            <div class="field"><label>OM</label><input type="text" id="editOM"></div>
+            <div class="field"><label>Cidade</label><input type="text" id="editCidade"></div>
+        </div>
+        <div class="field"><label>E-mail</label><input type="email" id="editEmail"></div>
+        <div class="field"><label>Nova Senha (deixe em branco para manter)</label><input type="password" id="editSenha" placeholder="mínimo 6 caracteres"></div>
+        <div id="msgEdit" class="msg-modal"></div>
+        <div class="modal-footer">
+            <button class="btn-cancel" onclick="closeModal('modalEdit')">Cancelar</button>
+            <button class="btn-save" onclick="saveUser()">Salvar</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL ALTERAR PERFIL -->
+<div class="modal-overlay" id="modalRole">
+    <div class="modal" style="max-width:360px">
+        <h3>🔑 Alterar Perfil</h3>
+        <p style="font-size:13px;color:#888;margin-bottom:16px;" id="roleUserName"></p>
+        <input type="hidden" id="roleId">
+        <div class="field">
+            <label>Perfil</label>
+            <select id="roleSelect">
+                <option value="user">👤 User — somente conversão</option>
+                <option value="manager">🏛️ Manager — painel da sua OM</option>
+                <option value="admin">🛡️ Admin — acesso total</option>
+            </select>
+        </div>
+        <div id="msgRole" class="msg-modal"></div>
+        <div class="modal-footer">
+            <button class="btn-cancel" onclick="closeModal('modalRole')">Cancelar</button>
+            <button class="btn-save" onclick="saveRole()">Confirmar</button>
+        </div>
+    </div>
+</div>
+
+<footer>&copy; 2026 Conversor SISCOFIS-SIADS - Desenv: ST Augusto</footer>
+
+<script>
+let allData  = null;
+let myRole   = null;
+let activeTab = 'users';
+
+async function loadData() {
+    const res = await fetch('/admin/api/stats');
+    if (res.status === 401 || res.status === 403) { window.location.href = '/admin/login'; return; }
+    allData = await res.json();
+    myRole  = allData.adminUser.role;
+
+    document.getElementById('adminName').textContent  = allData.adminUser.nomeGuerra || '';
+    const badge = document.getElementById('roleBadge');
+    badge.textContent  = myRole;
+    badge.className    = 'role-badge ' + myRole;
+
+    renderSummary(allData.summary);
+    renderTabs();
+    renderUsers(allData.users);
+    renderConversions(allData.conversions);
+    if (allData.byOM) renderOM(allData.byOM);
+}
+
+function renderSummary(s) {
+    document.getElementById('summaryGrid').innerHTML = `
+        <div class="summary-card blue">  <div class="label">Usuários</div>      <div class="value">${s.totalUsers}</div></div>
+        <div class="summary-card green"> <div class="label">Conversões</div>     <div class="value">${s.totalConversions}</div></div>
+        <div class="summary-card orange"><div class="label">Hoje</div>           <div class="value">${s.todayConversions}</div></div>
+        <div class="summary-card purple"><div class="label">Total de Itens</div> <div class="value">${s.totalItems.toLocaleString('pt-BR')}</div></div>
+    `;
+}
+
+function renderTabs() {
+    const tabs = [
+        { id: 'users',       label: '👤 Usuários' },
+        { id: 'conversions', label: '📄 Conversões' },
+    ];
+    if (myRole === 'admin' && allData.byOM) {
+        tabs.push({ id: 'om', label: '🏛️ Por OM' });
+    }
+    document.getElementById('tabsContainer').innerHTML = tabs.map(t =>
+        `<button class="tab ${t.id === activeTab ? 'active' : ''}" onclick="showTab('${t.id}')">${t.label}</button>`
+    ).join('');
+}
+
+function fmtDate(iso) {
+    if (!iso) return '—';
+    const d = new Date(iso);
+    return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+}
+function fmtCpf(cpf) { return cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4'); }
+
+function roleBadgeHtml(role) {
+    const map = { admin: 'badge-admin', manager: 'badge-manager', user: 'badge-user' };
+    return `<span class="badge ${map[role] || 'badge-user'}">${role || 'user'}</span>`;
+}
+
+function renderUsers(users) {
+    const isAdmin = myRole === 'admin';
+    if (isAdmin) document.getElementById('th-actions').textContent = 'Ações';
+
+    const tbody = document.getElementById('body-users');
+    if (!users.length) { tbody.innerHTML = '<tr><td colspan="10" class="empty">Nenhum usuário cadastrado</td></tr>'; return; }
+    tbody.innerHTML = users.map(u => `
+        <tr data-search="${(u.nomeGuerra+u.cpf+u.om+u.nomeCompleto).toLowerCase()}">
+            <td><b>${u.nomeGuerra}</b><br><span style="font-size:11px;color:#888">${u.nomeCompleto}</span></td>
+            <td>${u.postoGrad || '—'}</td>
+            <td style="font-family:monospace">${fmtCpf(u.cpf)}</td>
+            <td>${u.om}</td>
+            <td style="font-size:12px">${u.email}</td>
+            <td>${roleBadgeHtml(u.role)}</td>
+            <td style="text-align:center"><b>${u.totalConversions}</b></td>
+            <td style="text-align:center">${u.totalItems.toLocaleString('pt-BR')}</td>
+            <td style="font-size:12px">${fmtDate(u.createdAt)}</td>
+            <td>
+                ${isAdmin ? `
+                <div class="actions">
+                    <button class="btn-icon btn-edit"  title="Editar"         onclick="openEdit('${u.id}')">✏️</button>
+                    <button class="btn-icon btn-role"  title="Alterar perfil" onclick="openRole('${u.id}','${u.nomeGuerra}','${u.role || 'user'}')">🔑</button>
+                    ${u.cpf !== '93428979087' ? `<button class="btn-icon btn-del" title="Excluir" onclick="deleteUser('${u.id}','${u.nomeGuerra}')">🗑️</button>` : ''}
+                </div>` : ''}
+            </td>
+        </tr>
+    `).join('');
+}
+
+function renderConversions(conv) {
+    const tbody = document.getElementById('body-conv');
+    if (!conv.length) { tbody.innerHTML = '<tr><td colspan="6" class="empty">Nenhuma conversão registrada</td></tr>'; return; }
+    tbody.innerHTML = conv.map(c => `
+        <tr data-search="${(c.userName+c.userOM+c.pdfName+c.outputFile).toLowerCase()}">
+            <td style="font-size:12px;white-space:nowrap">${fmtDate(c.processedAt)}</td>
+            <td><b>${c.userName}</b></td>
+            <td>${c.userOM}</td>
+            <td style="font-size:12px;color:#888">${c.pdfName}</td>
+            <td style="font-size:12px;font-family:monospace">${c.outputFile}</td>
+            <td style="text-align:center">${c.itemsCount}</td>
+        </tr>
+    `).join('');
+}
+
+function renderOM(byOM) {
+    const grid = document.getElementById('om-grid');
+    if (!byOM || !byOM.length) { grid.innerHTML = '<p class="empty">Nenhum dado disponível</p>'; return; }
+    grid.innerHTML = byOM.map(o => `
+        <div class="om-card">
+            <div class="om-icon">🏛️</div>
+            <div class="om-info">
+                <div class="om-name">${o.om}</div>
+                <div class="om-stats">${o.conversions} conversão(ões) &bull; ${o.totalItems.toLocaleString('pt-BR')} itens</div>
+            </div>
+        </div>
+    `).join('');
+}
+
+function showTab(name) {
+    activeTab = name;
+    renderTabs();
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('panel-' + name).classList.add('active');
+}
+
+function filterTable(tableId, q) {
+    document.querySelectorAll(`#${tableId} tbody tr[data-search]`).forEach(r => {
+        r.style.display = r.dataset.search.includes(q.toLowerCase()) ? '' : 'none';
+    });
+}
+
+// ── MODAL EDITAR ──────────────────────────────────────────
+async function openEdit(id) {
+    const res  = await fetch(`/admin/api/users/${id}`);
+    const data = await res.json();
+    if (!data.success) return alert(data.message);
+    const u = data.data;
+    document.getElementById('editId').value           = u.id;
+    document.getElementById('editNomeCompleto').value = u.nomeCompleto;
+    document.getElementById('editNomeGuerra').value   = u.nomeGuerra;
+    document.getElementById('editPostoGrad').value    = u.postoGrad;
+    document.getElementById('editIdtMilitar').value   = u.idtMilitar;
+    document.getElementById('editOM').value           = u.om;
+    document.getElementById('editCidade').value       = u.cidade;
+    document.getElementById('editEmail').value        = u.email;
+    document.getElementById('editSenha').value        = '';
+    document.getElementById('msgEdit').className      = 'msg-modal';
+    document.getElementById('modalEdit').classList.add('open');
+}
+
+async function saveUser() {
+    const id  = document.getElementById('editId').value;
+    const msg = document.getElementById('msgEdit');
+    const body = {
+        nomeCompleto: document.getElementById('editNomeCompleto').value,
+        nomeGuerra:   document.getElementById('editNomeGuerra').value,
+        postoGrad:    document.getElementById('editPostoGrad').value,
+        idtMilitar:   document.getElementById('editIdtMilitar').value,
+        om:           document.getElementById('editOM').value,
+        cidade:       document.getElementById('editCidade').value,
+        email:        document.getElementById('editEmail').value,
+        password:     document.getElementById('editSenha').value || undefined,
+    };
+    const res  = await fetch(`/admin/api/users/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const data = await res.json();
+    if (data.success) {
+        msg.className = 'msg-modal success'; msg.textContent = 'Salvo com sucesso!';
+        setTimeout(() => { closeModal('modalEdit'); loadData(); }, 800);
+    } else {
+        msg.className = 'msg-modal error'; msg.textContent = data.message || 'Erro ao salvar';
+    }
+}
+
+// ── MODAL PERFIL ──────────────────────────────────────────
+function openRole(id, nome, role) {
+    document.getElementById('roleId').value          = id;
+    document.getElementById('roleUserName').textContent = nome;
+    document.getElementById('roleSelect').value      = role;
+    document.getElementById('msgRole').className     = 'msg-modal';
+    document.getElementById('modalRole').classList.add('open');
+}
+
+async function saveRole() {
+    const id   = document.getElementById('roleId').value;
+    const role = document.getElementById('roleSelect').value;
+    const msg  = document.getElementById('msgRole');
+    const res  = await fetch(`/admin/api/users/${id}/role`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ role }) });
+    const data = await res.json();
+    if (data.success) {
+        msg.className = 'msg-modal success'; msg.textContent = 'Perfil atualizado!';
+        setTimeout(() => { closeModal('modalRole'); loadData(); }, 800);
+    } else {
+        msg.className = 'msg-modal error'; msg.textContent = data.message || 'Erro';
+    }
+}
+
+// ── EXCLUIR ───────────────────────────────────────────────
+async function deleteUser(id, nome) {
+    if (!confirm(`Excluir o usuário "${nome}"? Esta ação não pode ser desfeita.`)) return;
+    const res  = await fetch(`/admin/api/users/${id}`, { method: 'DELETE' });
+    const data = await res.json();
+    data.success ? loadData() : alert(data.message || 'Erro ao excluir');
+}
+
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function logout() { window.location.href = '/admin/logout'; }
+
+loadData();
+</script>
+</body>
+</html>
