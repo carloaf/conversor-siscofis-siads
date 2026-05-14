@@ -1,6 +1,9 @@
 # Dados de usuários (contém CPF e identidade militar)
 conversor-siscofis-siads/data/users.json
 
+# Histórico de conversões gerado em runtime pela aplicação
+conversor-siscofis-siads/data/conversions.json
+
 # ============================================================
 # DADOS SENSÍVEIS — nunca versionar
 # ============================================================
