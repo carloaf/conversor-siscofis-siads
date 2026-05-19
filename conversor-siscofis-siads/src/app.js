@@ -2,6 +2,7 @@ const express      = require('express');
 const path         = require('path');
 const session      = require('express-session');
 const uploadRoutes = require('./routes/uploadRoutes');
+const uorgRoutes   = require('./routes/uorgRoutes');
 const authRoutes   = require('./routes/authRoutes');
 const adminRoutes  = require('./routes/adminRoutes');
 const { requireAuth } = require('./middlewares/authMiddleware');
@@ -47,6 +48,7 @@ app.use('/api/auth', authRoutes);
 
 // Rotas protegidas
 app.use('/api/upload', requireAuth, uploadRoutes);
+app.use('/api/uorg',   requireAuth, uorgRoutes);
 
 // Error handling
 app.use((err, req, res, next) => {

@@ -174,3 +174,111 @@ Esses dados ficam apenas na tela — **não são gravados** no arquivo TXT nem e
 - `conversor-siscofis-siads/FORMATO_SAIDA.md` — detalhamento do formato H/D/T
 - `conversor-siscofis-siads/src/services/pdfExtractorService.js` — lógica de extração
 - `conversor-siscofis-siads/src/services/txtFormatterService.js` — lógica de formatação
+- `conversor-siscofis-siads/src/services/uorgFormatterService.js` — lógica de geração UORG
+- `conversor-siscofis-siads/src/controllers/uorgController.js` — controller UORG
+- `conversor-siscofis-siads/src/routes/uorgRoutes.js` — rota POST /api/uorg
+
+---
+
+## 🗂️ LEIAUTES SIADS — 4 TIPOS DE ARQUIVO
+
+Fonte: `orientacoes-gerais-geracao-dos-arquivos-v6-21.pdf`
+
+### 1. ARQUIVO DE UORG (`H¥UO¥...`)
+
+Gera o cadastro das Unidades Organizacionais (seções/departamentos) de uma OM.
+
+```
+H¥UO¥1¥<órgão>¥<UASG>¥<CPF>¥£
+D¥CODIGO¥UG_VINCULADA¥NOME¥SIGLA¥ENDERECO¥CEP¥PAIS¥TELEFONE¥RAMAL¥CPF_RESP¥
+  NOME_RESP¥MATRICULA_SIAPE¥NR_PORTARIA¥UORG_SUBORDINADA¥NOME_REDUZIDO¥
+  DATA_CRIACAO¥NR_DOC_CRIACAO¥UF¥MUNICIPIO¥EMAIL¥COD_SIORG¥ALMOXARIFADO¥£
+T¥ddMMyyyyHHmmss¥qtd_registros¥FIM¥£
+```
+
+**Campos da linha D** (22 campos de dados):
+
+| Seq | Campo | Tam | Obrig? |
+|---|---|---|---|
+|2|Código UORG|A(100)|Sim|
+|3|UG Vinculada|N(6)|Sim|
+|4|Nome|A(100)|Sim|
+|5|Sigla|A(16)|Sim|
+|6|Endereço|A(60)|Sim|
+|7|CEP|A(8) — sem pontuação|Sim|
+|8|País|A(40) — default `BRASIL`|Sim|
+|9|Telefone|A(25)|Sim|
+|10|Ramal|A(4)|Não|
+|11|CPF Responsável|N(11) — sem pontuação|Sim|
+|12|Nome Responsável|A(40)|Sim|
+|13|Matrícula SIAPE|N(12)|Sim|
+|14|Nr Portaria Nomeação|A(25)|Não|
+|15|UORG Subordinada|A(100)|Não|
+|16|Nome Reduzido|A(40)|Sim|
+|17|Data Criação|N(8) ddMMyyyy|Sim|
+|18|Nr Documento Criação|A(60)|Sim|
+|19|Sigla UF|A(2)|Sim|
+|20|Município|A(40)|Sim|
+|21|E-mail|A(50)|Sim|
+|22|Código Siorg|N(6)|Sim|
+|23|Almoxarifado|`SIM` ou `NAO`|Sim|
+
+**Nota:** A linha T do UORG tem apenas 4 campos (sem totalizador): `T¥ddMMyyyyHHmmss¥qtd¥FIM¥£`
+
+**Implementação:**
+- Backend: `POST /api/uorg` → `uorgController.js` → `uorgFormatterService.js`
+- Frontend: aba "📋 Conversão de UORG" em `public/index.html`
+- Workflow: usuário preenche UASG + Órgão, adiciona UORGs uma a uma, gera o TXT
+
+---
+
+### 2. ARQUIVO DE MATERIAL DE CONSUMO (`H¥CO¥...`) — ✅ Implementado
+
+```
+H¥CO¥1¥<órgão>¥<UASG>¥<CPF>¥<gestão>¥£
+D¥SiadsId136002¥<NrFicha>¥<DESCRIÇÃO>¥<Unidade>¥<ContaContábil>¥A1¥<QTDE>¥<ValorCentavos>¥TRUE¥£
+T¥ddMMyyyyHHmmss¥qtd¥total_qtde¥total_valor¥FIM¥£
+```
+
+Originado de PDFs do SISCOFIS. Detectado automaticamente pelo texto `MATERIAL DE CONSUMO` no PDF.
+
+---
+
+### 3. ARQUIVO DE MATERIAL PERMANENTE (`H¥PE¥...`)
+
+```
+H¥PE¥1¥<órgão>¥<UASG>¥<CPF>¥<gestão>¥£
+D¥cod_mat¥descrição¥conta_contábil¥endereço¥UORG¥tipo(1)¥situação(1-5)¥
+  tipo_plaqueta(1-3)¥data_tombamento¥vlr_bem¥forma_aquisição¥especificação¥
+  data_devolução¥nr_serie¥patrimônio¥marca¥modelo¥fabricante¥garantidor¥
+  nr_contrato¥início_garantia¥fim_garantia¥CPF_corresponsável¥corresponsável¥
+  almoxarifado¥data_reavaliação¥valor_reavaliação¥vida_útil¥£
+T¥ddMMyyyyHHmmss¥qtd¥total_vlr_unitário¥FIM¥£
+```
+
+**Codificação da Situação:** 1=Bom, 2=Recuperável, 3=Irrecuperável, 4=Ocioso, 5=Antieconômico  
+**Tipo Plaqueta:** 1=metal, 2=plástico, 3=papel  
+**Forma Aquisição:** Código numérico conforme tabela SIADS
+
+---
+
+### 4. ARQUIVO DE MATERIAL INTANGÍVEL (`H¥PE¥...`)
+
+Mesmo leiaute do Material Permanente, exceto:
+- Tipo de plaqueta = `4` (INTANGIVEL)
+- Não há patrimônio físico — campos de plaqueta/número série ficam em branco
+
+---
+
+## 🖥️ INTERFACE WEB — ABAS
+
+A interface possui 2 abas:
+1. **📋 Conversão de UORG** (padrão ao abrir) — formulário para gerar arquivo UORG TXT
+2. **📄 Conversão de Itens** — upload de PDF SISCOFIS para gerar arquivo de consumo TXT
+
+### Componentes Visuais Relevantes
+- Container: `max-width: 850px`
+- Esquema de cores: `#7A8C42` / `#4A5C28` (verde militar)
+- Tab ativa: background `#6B7C3A`, cor branca
+- Formulário UORG: campos agrupados em `<fieldset>` (Identificação / Localização / Contato / Responsável / Criação e Organização)
+- Tabela de UORGs: `.uorg-table` com cabeçalho verde e linhas zebradas

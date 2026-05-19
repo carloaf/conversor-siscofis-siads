@@ -26,7 +26,7 @@
             border-radius: 20px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
             padding: 40px;
-            max-width: 600px;
+            max-width: 850px;
             width: 100%;
         }
 
@@ -251,6 +251,105 @@
             transform: translateY(-2px);
             box-shadow: 0 5px 18px rgba(13, 74, 117, 0.45);
         }
+
+        /* ========================== ABAS ========================== */
+        .tabs {
+            display: flex;
+            border-bottom: 2px solid #d0d9b3;
+            margin-bottom: 24px;
+            gap: 2px;
+        }
+        .tab-btn {
+            padding: 9px 20px;
+            border: 1px solid #d0d9b3;
+            border-bottom: none;
+            background: #eef1e6;
+            color: #666;
+            cursor: pointer;
+            border-radius: 8px 8px 0 0;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        .tab-btn.active { background: #6B7C3A; color: white; border-color: #6B7C3A; }
+        .tab-btn:hover:not(.active) { background: #e0e8cc; color: #4A5C28; }
+        .tab-panel { display: none; }
+        .tab-panel.active { display: block; }
+
+        /* ======================== FORMULÁRIOS UORG ======================== */
+        .form-section { margin-bottom: 18px; }
+        .form-section h3 {
+            font-size: 12px;
+            font-weight: 700;
+            color: #4A5C28;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            margin-bottom: 12px;
+            padding-bottom: 5px;
+            border-bottom: 2px solid #d0d9b3;
+        }
+        fieldset {
+            border: 1px solid #d0d9b3;
+            border-radius: 8px;
+            padding: 12px 14px;
+            margin-bottom: 10px;
+            background: #fafbf7;
+        }
+        legend {
+            font-size: 11px;
+            font-weight: 700;
+            color: #6B7C3A;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 0 6px;
+        }
+        .form-group { display: flex; flex-direction: column; margin-bottom: 9px; }
+        .form-group:last-child { margin-bottom: 0; }
+        .form-group label { font-size: 11px; font-weight: 600; color: #555; margin-bottom: 3px; }
+        .form-group input[type="text"],
+        .form-group input[type="email"],
+        .form-group select {
+            padding: 6px 9px;
+            border: 1px solid #c8d4a0;
+            border-radius: 5px;
+            font-size: 13px;
+            background: white;
+            transition: border-color 0.2s;
+        }
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #6B7C3A;
+            box-shadow: 0 0 0 2px rgba(107,124,58,0.15);
+        }
+        .form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 9px; }
+        .form-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 9px; }
+        .form-grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 10px; margin-bottom: 9px; }
+        .form-grid-2:last-child, .form-grid-3:last-child, .form-grid-4:last-child { margin-bottom: 0; }
+        @media (max-width: 640px) {
+            .form-grid-2, .form-grid-3, .form-grid-4 { grid-template-columns: 1fr; }
+        }
+        .btn-add {
+            background: #4A5C28;
+            color: white;
+            border: none;
+            padding: 9px 24px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 6px;
+        }
+        .btn-add:hover { background: #6B7C3A; transform: translateY(-1px); }
+
+        /* ======================== TABELA UORG ======================== */
+        .uorg-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 8px; }
+        .uorg-table th { background: #6B7C3A; color: white; padding: 8px 10px; text-align: left; font-weight: 600; font-size: 12px; }
+        .uorg-table td { padding: 7px 10px; border-bottom: 1px solid #e0e8cc; color: #333; }
+        .uorg-table tr:last-child td { border-bottom: none; }
+        .uorg-table tr:nth-child(even) { background: #f5f7f0; }
+        .btn-del { background: none; border: 1px solid #e44; color: #e44; border-radius: 12px; padding: 2px 9px; font-size: 11px; cursor: pointer; transition: all 0.2s; }
+        .btn-del:hover { background: #e44; color: white; }
     </style>
 </head>
 <body>
@@ -268,34 +367,223 @@
         <h1>🏛️ Conversor-SISCOFIS-SIADS</h1>
         <p class="subtitle">Conversão de Inventário de Almoxarifado (SISCOFIS → SIADS)</p>
 
-        <form id="uploadForm" enctype="multipart/form-data">
-            <div class="upload-area" id="uploadArea">
-                <div class="upload-icon">📄</div>
-                <div class="upload-text">
-                    <strong>Clique para selecionar</strong> ou arraste o arquivo PDF aqui
-                </div>
-                <div style="color: #999; font-size: 12px; margin-top: 5px;">
-                    Tamanho máximo: 10MB
-                </div>
-                <input type="file" id="pdfFile" name="pdf" accept=".pdf" class="file-input">
-            </div>
-
-            <div class="file-info" id="fileInfo">
-                <div class="file-name" id="fileName"></div>
-                <div class="file-size" id="fileSize"></div>
-            </div>
-
-            <button type="submit" class="btn" id="uploadBtn" disabled>
-                Processar PDF
-            </button>
-        </form>
-
-        <div class="loading" id="loading">
-            <div class="spinner"></div>
-            <div>Processando arquivo...</div>
+        <!-- Navegação por abas -->
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="uorg">📋 Conversão de UORG</button>
+            <button class="tab-btn" data-tab="itens">📄 Conversão de Itens</button>
         </div>
 
-        <div class="result" id="result"></div>
+        <!-- =================== ABA: UORG =================== -->
+        <div class="tab-panel active" id="tab-uorg">
+
+            <div class="form-section">
+                <h3>Configuração do Arquivo</h3>
+                <div class="form-grid-2">
+                    <div class="form-group">
+                        <label>UASG *</label>
+                        <input type="text" id="uorgUasg" maxlength="6" placeholder="Ex: 170531">
+                    </div>
+                    <div class="form-group">
+                        <label>Código do Órgão *</label>
+                        <input type="text" id="uorgOrgao" maxlength="6" placeholder="Ex: 52121">
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h3>Dados da UORG</h3>
+
+                <fieldset>
+                    <legend>Identificação</legend>
+                    <div class="form-grid-3">
+                        <div class="form-group">
+                            <label>Código UORG *</label>
+                            <input type="text" id="f-codigo" maxlength="100" placeholder="Ex: 00041001">
+                        </div>
+                        <div class="form-group">
+                            <label>UG Vinculada *</label>
+                            <input type="text" id="f-ugVinculada" maxlength="6" placeholder="Ex: 170531">
+                        </div>
+                        <div class="form-group">
+                            <label>Sigla *</label>
+                            <input type="text" id="f-sigla" maxlength="16">
+                        </div>
+                    </div>
+                    <div class="form-grid-2">
+                        <div class="form-group">
+                            <label>Nome *</label>
+                            <input type="text" id="f-nome" maxlength="100">
+                        </div>
+                        <div class="form-group">
+                            <label>Nome Reduzido *</label>
+                            <input type="text" id="f-nomeReduzido" maxlength="40">
+                        </div>
+                    </div>
+                </fieldset>
+
+                <fieldset>
+                    <legend>Localização</legend>
+                    <div class="form-group">
+                        <label>Endereço *</label>
+                        <input type="text" id="f-endereco" maxlength="60">
+                    </div>
+                    <div class="form-grid-4">
+                        <div class="form-group">
+                            <label>CEP *</label>
+                            <input type="text" id="f-cep" maxlength="9" placeholder="00000-000">
+                        </div>
+                        <div class="form-group">
+                            <label>UF *</label>
+                            <input type="text" id="f-uf" maxlength="2" placeholder="RJ">
+                        </div>
+                        <div class="form-group" style="grid-column: span 2">
+                            <label>Município *</label>
+                            <input type="text" id="f-municipio" maxlength="40">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>País *</label>
+                        <input type="text" id="f-pais" maxlength="40" value="BRASIL">
+                    </div>
+                </fieldset>
+
+                <fieldset>
+                    <legend>Contato</legend>
+                    <div class="form-grid-3">
+                        <div class="form-group">
+                            <label>Telefone *</label>
+                            <input type="text" id="f-telefone" maxlength="25" placeholder="(21) 3xxx-xxxx">
+                        </div>
+                        <div class="form-group">
+                            <label>Ramal</label>
+                            <input type="text" id="f-ramal" maxlength="4">
+                        </div>
+                        <div class="form-group">
+                            <label>E-mail *</label>
+                            <input type="email" id="f-email" maxlength="50">
+                        </div>
+                    </div>
+                </fieldset>
+
+                <fieldset>
+                    <legend>Responsável</legend>
+                    <div class="form-grid-2">
+                        <div class="form-group">
+                            <label>CPF do Responsável *</label>
+                            <input type="text" id="f-cpfResponsavel" maxlength="14" placeholder="000.000.000-00">
+                        </div>
+                        <div class="form-group">
+                            <label>Matrícula SIAPE *</label>
+                            <input type="text" id="f-matriculaSiape" maxlength="12">
+                        </div>
+                    </div>
+                    <div class="form-grid-2">
+                        <div class="form-group">
+                            <label>Nome do Responsável *</label>
+                            <input type="text" id="f-nomeResponsavel" maxlength="40">
+                        </div>
+                        <div class="form-group">
+                            <label>Nr Portaria de Nomeação</label>
+                            <input type="text" id="f-portaria" maxlength="25">
+                        </div>
+                    </div>
+                </fieldset>
+
+                <fieldset>
+                    <legend>Criação e Organização</legend>
+                    <div class="form-grid-2">
+                        <div class="form-group">
+                            <label>Data de Criação * (dd/mm/aaaa)</label>
+                            <input type="text" id="f-dataCriacao" maxlength="10" placeholder="01/01/2000">
+                        </div>
+                        <div class="form-group">
+                            <label>Nr Documento de Criação *</label>
+                            <input type="text" id="f-nrDocCriacao" maxlength="60">
+                        </div>
+                    </div>
+                    <div class="form-grid-2">
+                        <div class="form-group">
+                            <label>Código Siorg *</label>
+                            <input type="text" id="f-codigoSiorg" maxlength="6">
+                        </div>
+                        <div class="form-group">
+                            <label>UORG Subordinada</label>
+                            <input type="text" id="f-uorgSubordinada" maxlength="100" placeholder="Opcional">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Almoxarifado? *</label>
+                        <div style="display:flex; gap:24px; margin-top:6px">
+                            <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:13px; font-weight:normal">
+                                <input type="radio" name="almoxarifado" value="SIM"> SIM
+                            </label>
+                            <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:13px; font-weight:normal">
+                                <input type="radio" name="almoxarifado" value="NAO" checked> NÃO
+                            </label>
+                        </div>
+                    </div>
+                </fieldset>
+
+                <button type="button" class="btn-add" id="btnAddUorg">+ Adicionar UORG à Lista</button>
+            </div>
+
+            <!-- Lista de UORGs adicionadas -->
+            <div class="form-section" id="uorgListSection" style="display:none">
+                <h3>UORGs na Lista (<span id="uorgCount">0</span>)</h3>
+                <table class="uorg-table">
+                    <thead>
+                        <tr>
+                            <th>Código</th>
+                            <th>Nome</th>
+                            <th>Sigla</th>
+                            <th>UG Vínc.</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="uorgTableBody"></tbody>
+                </table>
+            </div>
+
+            <button class="btn" id="btnGerarUorg" disabled>Gerar Arquivo UORG (.txt)</button>
+
+            <div class="loading" id="uorg-loading">
+                <div class="spinner"></div>
+                <div>Gerando arquivo...</div>
+            </div>
+            <div class="result" id="uorg-result"></div>
+        </div>
+
+        <!-- =================== ABA: ITENS (PDF) =================== -->
+        <div class="tab-panel" id="tab-itens">
+            <form id="uploadForm" enctype="multipart/form-data">
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-icon">📄</div>
+                    <div class="upload-text">
+                        <strong>Clique para selecionar</strong> ou arraste o arquivo PDF aqui
+                    </div>
+                    <div style="color: #999; font-size: 12px; margin-top: 5px;">
+                        Tamanho máximo: 10MB
+                    </div>
+                    <input type="file" id="pdfFile" name="pdf" accept=".pdf" class="file-input">
+                </div>
+
+                <div class="file-info" id="fileInfo">
+                    <div class="file-name" id="fileName"></div>
+                    <div class="file-size" id="fileSize"></div>
+                </div>
+
+                <button type="submit" class="btn" id="uploadBtn" disabled>
+                    Processar PDF
+                </button>
+            </form>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <div>Processando arquivo...</div>
+            </div>
+
+            <div class="result" id="result"></div>
+        </div>
     </div>
 
     <script>
@@ -325,59 +613,202 @@
             window.location.href = '/login.html';
         });
 
+        // ==================== ABAS ====================
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+                btn.classList.add('active');
+                document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+            });
+        });
+
+        // ==================== UORG ====================
+        let uorgList = [];
+
+        const btnAddUorg    = document.getElementById('btnAddUorg');
+        const btnGerarUorg  = document.getElementById('btnGerarUorg');
+        const uorgListSec   = document.getElementById('uorgListSection');
+        const uorgTableBody = document.getElementById('uorgTableBody');
+        const uorgCountEl   = document.getElementById('uorgCount');
+        const uorgLoading   = document.getElementById('uorg-loading');
+        const uorgResult    = document.getElementById('uorg-result');
+
+        function fv(id) { return (document.getElementById(id) || {}).value || ''; }
+
+        btnAddUorg.addEventListener('click', () => {
+            const required = [
+                { id: 'f-codigo',          label: 'Código UORG'          },
+                { id: 'f-ugVinculada',     label: 'UG Vinculada'         },
+                { id: 'f-nome',            label: 'Nome'                 },
+                { id: 'f-sigla',           label: 'Sigla'                },
+                { id: 'f-nomeReduzido',    label: 'Nome Reduzido'        },
+                { id: 'f-endereco',        label: 'Endereço'             },
+                { id: 'f-cep',             label: 'CEP'                  },
+                { id: 'f-uf',              label: 'UF'                   },
+                { id: 'f-municipio',       label: 'Município'            },
+                { id: 'f-pais',            label: 'País'                 },
+                { id: 'f-telefone',        label: 'Telefone'             },
+                { id: 'f-email',           label: 'E-mail'               },
+                { id: 'f-cpfResponsavel',  label: 'CPF do Responsável'   },
+                { id: 'f-nomeResponsavel', label: 'Nome do Responsável'  },
+                { id: 'f-matriculaSiape',  label: 'Matrícula SIAPE'      },
+                { id: 'f-dataCriacao',     label: 'Data de Criação'      },
+                { id: 'f-nrDocCriacao',    label: 'Nr Documento Criação' },
+                { id: 'f-codigoSiorg',     label: 'Código Siorg'         },
+            ];
+            const missing = required.filter(f => !fv(f.id).trim());
+            if (missing.length) {
+                showUorgResult('error', 'Campos obrigatórios não preenchidos:<br>' + missing.map(f => '• ' + f.label).join('<br>'));
+                return;
+            }
+            const almoxi = document.querySelector('input[name="almoxarifado"]:checked');
+            uorgList.push({
+                codigo:          fv('f-codigo').trim(),
+                ugVinculada:     fv('f-ugVinculada').trim(),
+                nome:            fv('f-nome').trim(),
+                sigla:           fv('f-sigla').trim(),
+                nomeReduzido:    fv('f-nomeReduzido').trim(),
+                endereco:        fv('f-endereco').trim(),
+                cep:             fv('f-cep').trim(),
+                uf:              fv('f-uf').trim().toUpperCase(),
+                municipio:       fv('f-municipio').trim(),
+                pais:            fv('f-pais').trim() || 'BRASIL',
+                telefone:        fv('f-telefone').trim(),
+                ramal:           fv('f-ramal').trim(),
+                email:           fv('f-email').trim(),
+                cpfResponsavel:  fv('f-cpfResponsavel').trim(),
+                nomeResponsavel: fv('f-nomeResponsavel').trim(),
+                matriculaSiape:  fv('f-matriculaSiape').trim(),
+                portaria:        fv('f-portaria').trim(),
+                uorgSubordinada: fv('f-uorgSubordinada').trim(),
+                dataCriacao:     fv('f-dataCriacao').trim(),
+                nrDocCriacao:    fv('f-nrDocCriacao').trim(),
+                codigoSiorg:     fv('f-codigoSiorg').trim(),
+                almoxarifado:    almoxi ? almoxi.value : 'NAO',
+            });
+            renderUorgTable();
+            clearUorgForm();
+            uorgResult.className = 'result';
+        });
+
+        function renderUorgTable() {
+            uorgTableBody.innerHTML = '';
+            uorgList.forEach((u, idx) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td>${u.codigo}</td><td>${u.nome}</td><td>${u.sigla}</td><td>${u.ugVinculada}</td><td><button class="btn-del" data-idx="${idx}">✕</button></td>`;
+                uorgTableBody.appendChild(tr);
+            });
+            uorgCountEl.textContent = uorgList.length;
+            uorgListSec.style.display = uorgList.length ? 'block' : 'none';
+            const hasHeader = fv('uorgUasg').trim() && fv('uorgOrgao').trim();
+            btnGerarUorg.disabled = !(uorgList.length && hasHeader);
+        }
+
+        uorgTableBody.addEventListener('click', e => {
+            const btn = e.target.closest('.btn-del');
+            if (!btn) return;
+            uorgList.splice(Number(btn.dataset.idx), 1);
+            renderUorgTable();
+        });
+
+        document.getElementById('uorgUasg').addEventListener('input', renderUorgTable);
+        document.getElementById('uorgOrgao').addEventListener('input', renderUorgTable);
+
+        function clearUorgForm() {
+            ['f-codigo','f-ugVinculada','f-nome','f-sigla','f-nomeReduzido',
+             'f-endereco','f-cep','f-uf','f-municipio',
+             'f-telefone','f-ramal','f-email',
+             'f-cpfResponsavel','f-nomeResponsavel','f-matriculaSiape','f-portaria',
+             'f-dataCriacao','f-nrDocCriacao','f-codigoSiorg','f-uorgSubordinada'
+            ].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+            document.getElementById('f-pais').value = 'BRASIL';
+            const nao = document.querySelector('input[name="almoxarifado"][value="NAO"]');
+            if (nao) nao.checked = true;
+        }
+
+        btnGerarUorg.addEventListener('click', async () => {
+            const uasg  = fv('uorgUasg').trim();
+            const orgao = fv('uorgOrgao').trim();
+            if (!uasg || !orgao) { showUorgResult('error', 'Informe UASG e Código do Órgão antes de gerar.'); return; }
+            if (!uorgList.length) { showUorgResult('error', 'Adicione ao menos uma UORG à lista.'); return; }
+
+            btnGerarUorg.disabled = true;
+            uorgLoading.classList.add('show');
+            uorgResult.className = 'result';
+
+            try {
+                const response = await fetch('/api/uorg', {
+                    method:  'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body:    JSON.stringify({
+                        header: { uasg, orgao, cpf: currentUser ? currentUser.cpf : '' },
+                        uorgs:  uorgList,
+                    }),
+                });
+                const data = await response.json();
+                if (data.success) {
+                    const now   = new Date().toLocaleString('pt-BR');
+                    const autor = currentUser ? `${currentUser.postoGrad} ${currentUser.nomeGuerra}` : 'Não identificado';
+                    const cpf   = currentUser ? currentUser.cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4') : '';
+                    showUorgResult('success', `
+                        <strong>✓ Arquivo UORG gerado com sucesso!</strong><br><br>
+                        <strong>Arquivo:</strong> ${data.data.outputFile}<br>
+                        <strong>Total de UORGs:</strong> ${data.data.count}<br>
+                        <div class="completion-card">
+                            <strong>Registro de Conversão</strong>
+                            Arquivo gerado pelo sistema Conversor-SISCOFIS-SIADS<br>
+                            Data de processamento: ${now}<br>
+                            Autor: ${autor}<br>
+                            CPF: ${cpf}
+                        </div>
+                        <a href="${data.data.outputPath}" class="btn-download" download>📥 Baixar arquivo UORG (.txt)</a>
+                    `);
+                } else {
+                    showUorgResult('error', `Erro: ${data.error || data.message}`);
+                }
+            } catch (err) {
+                showUorgResult('error', `Erro ao gerar arquivo: ${err.message}`);
+            } finally {
+                uorgLoading.classList.remove('show');
+                btnGerarUorg.disabled = false;
+            }
+        });
+
+        function showUorgResult(type, msg) {
+            uorgResult.className = `result show ${type}`;
+            uorgResult.innerHTML = msg;
+            uorgResult.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        // ==================== ITENS (PDF upload) ====================
         const uploadArea = document.getElementById('uploadArea');
-        const fileInput = document.getElementById('pdfFile');
-        const fileInfo = document.getElementById('fileInfo');
-        const fileName = document.getElementById('fileName');
-        const fileSize = document.getElementById('fileSize');
-        const uploadBtn = document.getElementById('uploadBtn');
+        const fileInput  = document.getElementById('pdfFile');
+        const fileInfo   = document.getElementById('fileInfo');
+        const fileName   = document.getElementById('fileName');
+        const fileSize   = document.getElementById('fileSize');
+        const uploadBtn  = document.getElementById('uploadBtn');
         const uploadForm = document.getElementById('uploadForm');
-        const loading = document.getElementById('loading');
-        const result = document.getElementById('result');
+        const loading    = document.getElementById('loading');
+        const result     = document.getElementById('result');
 
-        // Click to upload
         uploadArea.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', e => handleFile(e.target.files[0]));
 
-        // File selection
-        fileInput.addEventListener('change', (e) => {
-            handleFile(e.target.files[0]);
-        });
-
-        // Drag and drop
-        uploadArea.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            uploadArea.classList.add('dragover');
-        });
-
-        uploadArea.addEventListener('dragleave', () => {
-            uploadArea.classList.remove('dragover');
-        });
-
-        uploadArea.addEventListener('drop', (e) => {
+        uploadArea.addEventListener('dragover', e => { e.preventDefault(); uploadArea.classList.add('dragover'); });
+        uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('dragover'));
+        uploadArea.addEventListener('drop', e => {
             e.preventDefault();
             uploadArea.classList.remove('dragover');
             const file = e.dataTransfer.files[0];
-            if (file && file.type === 'application/pdf') {
-                fileInput.files = e.dataTransfer.files;
-                handleFile(file);
-            } else {
-                showResult('error', 'Por favor, selecione um arquivo PDF válido.');
-            }
+            if (file && file.type === 'application/pdf') { fileInput.files = e.dataTransfer.files; handleFile(file); }
+            else showResult('error', 'Por favor, selecione um arquivo PDF válido.');
         });
 
         function handleFile(file) {
             if (!file) return;
-
-            if (file.type !== 'application/pdf') {
-                showResult('error', 'Por favor, selecione um arquivo PDF válido.');
-                return;
-            }
-
-            if (file.size > 10 * 1024 * 1024) {
-                showResult('error', 'O arquivo é muito grande. Tamanho máximo: 10MB.');
-                return;
-            }
-
+            if (file.type !== 'application/pdf') { showResult('error', 'Por favor, selecione um arquivo PDF válido.'); return; }
+            if (file.size > 10 * 1024 * 1024) { showResult('error', 'O arquivo é muito grande. Tamanho máximo: 10MB.'); return; }
             fileName.textContent = `📄 ${file.name}`;
             fileSize.textContent = `Tamanho: ${(file.size / 1024).toFixed(2)} KB`;
             fileInfo.classList.add('show');
@@ -385,32 +816,23 @@
             result.classList.remove('show');
         }
 
-        uploadForm.addEventListener('submit', async (e) => {
+        uploadForm.addEventListener('submit', async e => {
             e.preventDefault();
-
             const file = fileInput.files[0];
             if (!file) return;
-
             const formData = new FormData();
             formData.append('pdf', file);
-
             uploadBtn.disabled = true;
             loading.classList.add('show');
             result.classList.remove('show');
-
             try {
-                const response = await fetch('/api/upload', {
-                    method: 'POST',
-                    body: formData
-                });
-
+                const response = await fetch('/api/upload', { method: 'POST', body: formData });
                 const data = await response.json();
-
                 if (data.success) {
                     const now   = new Date().toLocaleString('pt-BR');
                     const autor = currentUser ? `${currentUser.postoGrad} ${currentUser.nomeGuerra}` : 'Não identificado';
                     const cpf   = currentUser ? currentUser.cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4') : '';
-                    let message = `
+                    showResult('success', `
                         <strong>✓ Arquivo processado com sucesso!</strong><br><br>
                         <strong>Arquivo gerado:</strong> ${data.data.outputFile}<br>
                         <strong>Total de itens:</strong> ${data.data.itemsCount}<br>
@@ -422,11 +844,8 @@
                             Autor: ${autor}<br>
                             CPF: ${cpf}
                         </div>
-                        <a href="${data.data.outputPath}" class="btn-download" download>
-                            📥 Baixar arquivo TXT
-                        </a>
-                    `;
-                    showResult('success', message);
+                        <a href="${data.data.outputPath}" class="btn-download" download>📥 Baixar arquivo TXT</a>
+                    `);
                 } else {
                     showResult('error', `Erro: ${data.message || data.error}`);
                 }
