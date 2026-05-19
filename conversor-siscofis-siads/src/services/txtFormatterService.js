@@ -63,7 +63,7 @@ class TxtFormatterService {
             
             itemsComSufixo.forEach((item, index) => {
                 // Passar a conta contábil para cada detalhe
-                const detailLine = this.formatDetailRecord(item, extractedData.contaContabil);
+                const detailLine = this.formatDetailRecord(item, item.contaContabil || extractedData.contaContabil);
                 detailLines.push(detailLine);
             });
         }

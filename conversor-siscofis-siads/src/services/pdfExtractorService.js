@@ -209,13 +209,24 @@ class PdfExtractorService {
         // UNIDADE  QTDE  VALOR_UNIT  VALOR_TOTAL  SITUAÇÃO  NR_ORD  DESCRIÇÃO [NR_FICHA]
         const UNID = '(?:Metro\\s+C[uú]bico|MetroQuadrado|Cent[íi]metro|Mil[íi]metro|Unidade|Quilograma|Litro|Metro|Pe[çc]a|Caixa|Conjunto|LATA|Bloco(?:\\s*\\(papel\\))?|Pacote|Garrafa|Embalagem|D[úu]zia|Grama|Kilo(?:grama)?|Frasco|Ampola|C[aá]psula|Comprimido|Tubo|Rolo|Par|Resma|Bobina|Barra|Galao|Gal[aã]o|Bisnaga|Vidro|Kit|Dose|Sache|Lata|Cubo)';
         const mainRe = new RegExp(
-            `^\\s*(${UNID})\\s+(\\d+)\\s+([\\d.,]+)\\s+([\\d.,]+)\\s+(BOM|REGULAR|RUIM)\\s+(\\d+)\\s+(.+)$`,
+            `^\\s*(${UNID})\\s+(\\d+)\\s+([\\d.,]+)\\s+([\\d.,]+)\\s+(BOM|REGULAR|RUIM|Recuper[aá]vel|Irrecuper[aá]vel|Inservível|Alienado)\\s+(\\d+)\\s+(.+)$`,
             'i'
         );
         // Regex para detectar se uma linha extra é continuação (não começa com unidade/número)
         const isItemLine = new RegExp(`^\\s*${UNID}\\s+\\d+`, 'i');
+        // Regex para detectar mudança de conta contábil entre seções do PDF
+        const contaContabilRe = /Conta\s+cont[aá]bil:\s*(\d+)/i;
+
+        let currentContaContabil = '';
 
         for (let i = 0; i < lines.length; i++) {
+            // Detectar nova conta contábil e atualizar a vigente
+            const contaM = contaContabilRe.exec(lines[i]);
+            if (contaM) {
+                currentContaContabil = contaM[1];
+                continue;
+            }
+
             const m = mainRe.exec(lines[i]);
             if (!m) continue;
 
@@ -260,7 +271,8 @@ class PdfExtractorService {
                 valorTotal,
                 situacao,
                 nomeMaterial:  especificacao,
-                especificacao
+                especificacao,
+                contaContabil: currentContaContabil
             });
         }
 
