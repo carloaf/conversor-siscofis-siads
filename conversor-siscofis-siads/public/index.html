@@ -350,6 +350,17 @@
         .uorg-table tr:nth-child(even) { background: #f5f7f0; }
         .btn-del { background: none; border: 1px solid #e44; color: #e44; border-radius: 12px; padding: 2px 9px; font-size: 11px; cursor: pointer; transition: all 0.2s; }
         .btn-del:hover { background: #e44; color: white; }
+        .pdf-import-area { border: 2px dashed #c8d4a0; border-radius: 8px; padding: 16px 20px; text-align: center; background: #f5f7f0; transition: all 0.2s; }
+        .pdf-import-area:hover { border-color: #6B7C3A; background: #eef1e6; }
+        .pdf-import-area.dragover { border-color: #4A5C28; background: #e6ead9; }
+        .btn-import { background: #6B7C3A; color: white; border: none; padding: 7px 18px; border-radius: 16px; font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s; margin-top: 10px; }
+        .btn-import:hover { background: #4A5C28; }
+        .status-ok  { color: #28a745; font-size: 15px; }
+        .status-warn { color: #e08000; font-size: 15px; cursor: help; }
+        .btn-edit { background: none; border: 1px solid #6B7C3A; color: #6B7C3A; border-radius: 12px; padding: 2px 9px; font-size: 11px; cursor: pointer; transition: all 0.2s; margin-right: 4px; }
+        .btn-edit:hover { background: #6B7C3A; color: white; }
+        .btn-add.editing { background: #1a6fa8; }
+        .btn-add.editing:hover { background: #0d4a75; }
     </style>
 </head>
 <body>
@@ -376,8 +387,112 @@
         <!-- =================== ABA: UORG =================== -->
         <div class="tab-panel active" id="tab-uorg">
 
+            <!-- PDF Import -->
             <div class="form-section">
-                <h3>Configuração do Arquivo</h3>
+                <h3>1. Importar de RELAÇÃO DOS DETENTORES DE MATERIAL CARGA</h3>
+                <div class="pdf-import-area" id="uorgPdfImportArea">
+                    <div>📄 Selecione o arquivo <strong>RELAÇÃO DOS DETENTORES DE MATERIAL CARGA</strong></div>
+                    <div style="font-size:11px;color:#888;margin-top:4px">Ou arraste o arquivo aqui</div>
+                    <input type="file" id="uorgPdfInput" accept=".pdf" style="display:none">
+                    <button type="button" class="btn-import" id="btnImportPdf">Importar PDF</button>
+                </div>
+                <div class="loading" id="uorg-extract-loading" style="margin-top:12px">
+                    <div class="spinner"></div><div>Extraindo UORGs do PDF...</div>
+                </div>
+                <div id="uorgImportResult"></div>
+            </div>
+
+            <!-- Campos Comuns -->
+            <div class="form-section" id="camposComuns" style="display:none">
+                <h3>2. Campos Comuns (aplicar a todas as UORGs)</h3>
+                <p style="font-size:12px;color:#666;margin-bottom:12px">Campos válidos para toda a OM. Deixe em branco os que variam por UORG.</p>
+                <fieldset>
+                    <legend>Localização da OM</legend>
+                    <div class="form-group">
+                        <label>Endereço</label>
+                        <input type="text" id="com-endereco" maxlength="60">
+                    </div>
+                    <div class="form-grid-4">
+                        <div class="form-group">
+                            <label>CEP</label>
+                            <input type="text" id="com-cep" maxlength="9" placeholder="00000-000">
+                        </div>
+                        <div class="form-group">
+                            <label>UF</label>
+                            <input type="text" id="com-uf" maxlength="2" placeholder="RJ">
+                        </div>
+                        <div class="form-group" style="grid-column:span 2">
+                            <label>Município</label>
+                            <input type="text" id="com-municipio" maxlength="40">
+                        </div>
+                    </div>
+                    <div class="form-grid-4">
+                        <div class="form-group" style="grid-column:span 2">
+                            <label>País</label>
+                            <input type="text" id="com-pais" maxlength="40" placeholder="BRASIL">
+                        </div>
+                    </div>
+                </fieldset>
+                <fieldset>
+                    <legend>Contato da OM</legend>
+                    <div class="form-grid-3">
+                        <div class="form-group">
+                            <label>UG Vinculada (UASG)</label>
+                            <input type="text" id="com-ugVinculada" maxlength="6">
+                        </div>
+                        <div class="form-group">
+                            <label>Telefone</label>
+                            <input type="text" id="com-telefone" maxlength="25" placeholder="(21) 3xxx-xxxx">
+                        </div>
+                        <div class="form-group">
+                            <label>E-mail</label>
+                            <input type="email" id="com-email" maxlength="50">
+                        </div>
+                    </div>
+                </fieldset>
+                <fieldset>
+                    <legend>Criação e Responsabilidade</legend>
+                    <div class="form-grid-3">
+                        <div class="form-group">
+                            <label>CPF do Responsável</label>
+                            <input type="text" id="com-cpfResponsavel" maxlength="11" placeholder="Somente dígitos">
+                        </div>
+                        <div class="form-group">
+                            <label>Data de Criação (ddMMyyyy)</label>
+                            <input type="text" id="com-dataCriacao" maxlength="8" placeholder="01012020">
+                        </div>
+                        <div class="form-group">
+                            <label>Nr Documento de Criação</label>
+                            <input type="text" id="com-nrDocCriacao" maxlength="60">
+                        </div>
+                    </div>
+                    <div class="form-grid-4">
+                        <div class="form-group">
+                            <label>Código Siorg</label>
+                            <input type="text" id="com-codigoSiorg" maxlength="6" placeholder="Ex: 000001">
+                        </div>
+                    </div>
+                </fieldset>
+                <fieldset>
+                    <legend>Código UORG — Numeração Sequencial</legend>
+                    <p style="font-size:11px;color:#666;margin-bottom:10px">O prefixo é preenchido automaticamente com a <strong>UG Vinculada (UASG)</strong> acima, mas pode ser editado. O código gerado será <em>prefixo</em> + número sequencial com 2 dígitos (ex.: UASG <code>170531</code> + nº <code>01</code> → <code>17053101</code>).</p>
+                    <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap">
+                        <div class="form-group" style="margin:0">
+                            <label>Prefixo</label>
+                            <input type="text" id="com-codigoPrefixo" maxlength="20" placeholder="Ex: 000410" style="width:130px">
+                        </div>
+                        <div class="form-group" style="margin:0">
+                            <label>Número inicial</label>
+                            <input type="number" id="com-codigoInicio" min="1" value="1" style="width:80px">
+                        </div>
+                        <button type="button" class="btn-import" id="btnNumerarUorgs" style="margin-bottom:2px">Numerar UORGs sem código</button>
+                    </div>
+                </fieldset>
+                <button type="button" class="btn-add" id="btnAplicarComuns">Aplicar a Todas as UORGs da Lista</button>
+            </div>
+
+            <div class="form-section">
+                <h3>3. Configuração do Arquivo</h3>
                 <div class="form-grid-2">
                     <div class="form-group">
                         <label>UASG *</label>
@@ -391,8 +506,12 @@
             </div>
 
             <div class="form-section">
-                <h3>Dados da UORG</h3>
-
+                <h3 id="toggleDadosUorg" style="cursor:pointer;user-select:none;display:flex;align-items:center;gap:8px">
+                    <span id="arrowDadosUorg" style="font-size:11px;transition:transform 0.2s;display:inline-block">▶</span>
+                    4. Dados da UORG
+                    <span style="font-size:11px;font-weight:normal;color:#999">— somente para adicionar uma UORG manualmente</span>
+                </h3>
+                <div id="dadosUorgBody" style="display:none">
                 <fieldset>
                     <legend>Identificação</legend>
                     <div class="form-grid-3">
@@ -525,6 +644,7 @@
                 </fieldset>
 
                 <button type="button" class="btn-add" id="btnAddUorg">+ Adicionar UORG à Lista</button>
+                </div><!-- /dadosUorgBody -->
             </div>
 
             <!-- Lista de UORGs adicionadas -->
@@ -533,10 +653,12 @@
                 <table class="uorg-table">
                     <thead>
                         <tr>
+                            <th style="width:36px">Status</th>
                             <th>Código</th>
                             <th>Nome</th>
                             <th>Sigla</th>
-                            <th>UG Vínc.</th>
+                            <th>Responsável</th>
+                            <th style="text-align:center;width:46px" title="Marque se esta UORG possui almoxarifado">Almx</th>
                             <th></th>
                         </tr>
                     </thead>
@@ -624,18 +746,163 @@
         });
 
         // ==================== UORG ====================
-        let uorgList = [];
+        let uorgList   = [];
+        let editingIdx = -1;
 
-        const btnAddUorg    = document.getElementById('btnAddUorg');
-        const btnGerarUorg  = document.getElementById('btnGerarUorg');
-        const uorgListSec   = document.getElementById('uorgListSection');
-        const uorgTableBody = document.getElementById('uorgTableBody');
-        const uorgCountEl   = document.getElementById('uorgCount');
-        const uorgLoading   = document.getElementById('uorg-loading');
-        const uorgResult    = document.getElementById('uorg-result');
+        const REQUIRED_FOR_GENERATE = [
+            'codigo','ugVinculada','nome','sigla','nomeReduzido',
+            'endereco','cep','uf','municipio','pais','telefone','email',
+            'cpfResponsavel','nomeResponsavel','matriculaSiape',
+            'dataCriacao','nrDocCriacao','codigoSiorg',
+        ];
+
+        const btnAddUorg     = document.getElementById('btnAddUorg');
+        const btnGerarUorg   = document.getElementById('btnGerarUorg');
+        const uorgListSec    = document.getElementById('uorgListSection');
+        const uorgTableBody  = document.getElementById('uorgTableBody');
+        const uorgCountEl    = document.getElementById('uorgCount');
+        const uorgLoading    = document.getElementById('uorg-loading');
+        const uorgResult     = document.getElementById('uorg-result');
+        const uorgExtLoading = document.getElementById('uorg-extract-loading');
+        const uorgImportRes  = document.getElementById('uorgImportResult');
+        const camposComuns   = document.getElementById('camposComuns');
+
+        // ─── SEÇÃO 4 — COLLAPSIBLE ───
+        const dadosUorgBody  = document.getElementById('dadosUorgBody');
+        const arrowDadosUorg = document.getElementById('arrowDadosUorg');
+        document.getElementById('toggleDadosUorg').addEventListener('click', () => {
+            const open = dadosUorgBody.style.display === 'none';
+            dadosUorgBody.style.display = open ? 'block' : 'none';
+            arrowDadosUorg.style.transform = open ? 'rotate(90deg)' : '';
+        });
+        function openDadosUorg() {
+            dadosUorgBody.style.display = 'block';
+            arrowDadosUorg.style.transform = 'rotate(90deg)';
+        }
 
         function fv(id) { return (document.getElementById(id) || {}).value || ''; }
 
+        function isComplete(u) {
+            return REQUIRED_FOR_GENERATE.every(k => u[k] && String(u[k]).trim());
+        }
+
+        // ─── PDF IMPORT ───
+        const uorgPdfImportArea = document.getElementById('uorgPdfImportArea');
+        const uorgPdfInput      = document.getElementById('uorgPdfInput');
+
+        document.getElementById('btnImportPdf').addEventListener('click', () => uorgPdfInput.click());
+
+        uorgPdfImportArea.addEventListener('dragover', e => { e.preventDefault(); uorgPdfImportArea.classList.add('dragover'); });
+        uorgPdfImportArea.addEventListener('dragleave', () => uorgPdfImportArea.classList.remove('dragover'));
+        uorgPdfImportArea.addEventListener('drop', e => {
+            e.preventDefault(); uorgPdfImportArea.classList.remove('dragover');
+            const f = e.dataTransfer.files[0];
+            if (f && f.type === 'application/pdf') processUorgPdf(f);
+            else showImportResult('error', 'Selecione um arquivo PDF válido.');
+        });
+        uorgPdfInput.addEventListener('change', e => { if (e.target.files[0]) processUorgPdf(e.target.files[0]); });
+
+        async function processUorgPdf(file) {
+            uorgExtLoading.classList.add('show');
+            uorgImportRes.innerHTML = '';
+            const fd = new FormData();
+            fd.append('pdf', file);
+            try {
+                const resp = await fetch('/api/uorg/extract', { method: 'POST', body: fd });
+                const data = await resp.json();
+                if (data.success) {
+                    let added = 0;
+                    for (const u of data.data.uorgs) {
+                        if (!uorgList.find(x => x.nome === u.nome)) { uorgList.push(u); added++; }
+                    }
+                    // Auto-gera códigos sequenciais usando UASG como prefixo (se disponível)
+                    const uasgBase = fv('uorgUasg').trim();
+                    if (uasgBase) {
+                        const digits = String(uorgList.length).length;
+                        let counter = 1;
+                        uorgList = uorgList.map(u => ({
+                            ...u,
+                            codigo: u.codigo || (uasgBase + String(counter++).padStart(Math.max(2, digits), '0')),
+                        }));
+                    }
+                    renderUorgTable();
+                    camposComuns.style.display = 'block';
+                    showImportResult('success',
+                        `✓ ${added} UORG(s) importadas do PDF (${data.data.count - added} ignoradas por duplicidade). ` +
+                        `Use <strong>⚠</strong> na tabela para completar os campos faltantes.`);
+                } else {
+                    showImportResult('error', data.error);
+                }
+            } catch (err) {
+                showImportResult('error', 'Erro ao enviar PDF: ' + err.message);
+            } finally {
+                uorgExtLoading.classList.remove('show');
+            }
+        }
+
+        function showImportResult(type, msg) {
+            uorgImportRes.className = `result show ${type}`;
+            uorgImportRes.style.marginTop = '10px';
+            uorgImportRes.innerHTML = msg;
+        }
+
+        // ─── CAMPOS COMUNS ───
+        // Sincroniza Prefixo com UG Vinculada (UASG), a menos que o usuário já tenha editado o prefixo manualmente
+        let prefixoSynced = true;
+        document.getElementById('com-codigoPrefixo').addEventListener('input', () => { prefixoSynced = false; });
+        document.getElementById('com-ugVinculada').addEventListener('input', e => {
+            if (prefixoSynced) document.getElementById('com-codigoPrefixo').value = e.target.value;
+        });
+
+        document.getElementById('btnNumerarUorgs').addEventListener('click', () => {
+            if (!uorgList.length) { alert('Nenhuma UORG na lista.'); return; }
+            // Usa prefixo informado ou, como fallback, a UASG do cabeçalho
+            const prefix = fv('com-codigoPrefixo').trim() || fv('uorgUasg').trim();
+            if (!prefix) { alert('Informe o prefixo do código ou preencha a UASG na seção de Configuração do Arquivo.'); return; }
+            const start  = Math.max(1, parseInt(document.getElementById('com-codigoInicio').value, 10) || 1);
+            const digits = String(uorgList.length + start - 1).length;
+            let counter = start;
+            let count = 0;
+            uorgList = uorgList.map(u => {
+                if (u.codigo) return u;
+                count++;
+                return { ...u, codigo: prefix + String(counter++).padStart(Math.max(2, digits), '0') };
+            });
+            renderUorgTable();
+            alert(`Códigos gerados para ${count} UORG(s) com prefixo "${prefix}".`);
+        });
+
+        document.getElementById('btnAplicarComuns').addEventListener('click', () => {
+            if (!uorgList.length) { alert('Importe um PDF ou adicione UORGs primeiro.'); return; }
+            const pairs = [
+                ['endereco',        'com-endereco'],
+                ['cep',             'com-cep'],
+                ['uf',              'com-uf'],
+                ['municipio',       'com-municipio'],
+                ['pais',            'com-pais'],
+                ['ugVinculada',     'com-ugVinculada'],
+                ['telefone',        'com-telefone'],
+                ['email',           'com-email'],
+                ['cpfResponsavel',  'com-cpfResponsavel'],
+                ['dataCriacao',     'com-dataCriacao'],
+                ['nrDocCriacao',    'com-nrDocCriacao'],
+                ['codigoSiorg',     'com-codigoSiorg'],
+            ];
+            const toApply = {};
+            pairs.forEach(([k, id]) => { const v = fv(id).trim(); if (v) toApply[k] = v; });
+            if (!Object.keys(toApply).length) { alert('Preencha ao menos um campo antes de aplicar.'); return; }
+            let count = 0;
+            uorgList = uorgList.map(u => {
+                const upd = { ...u }; let changed = false;
+                Object.entries(toApply).forEach(([k, v]) => { if (!upd[k]) { upd[k] = v; changed = true; } });
+                if (changed) count++;
+                return upd;
+            });
+            renderUorgTable();
+            alert(`Campos comuns aplicados a ${count} UORG(s).`);
+        });
+
+        // ─── ADICIONAR / EDITAR ───
         btnAddUorg.addEventListener('click', () => {
             const required = [
                 { id: 'f-codigo',          label: 'Código UORG'          },
@@ -663,7 +930,7 @@
                 return;
             }
             const almoxi = document.querySelector('input[name="almoxarifado"]:checked');
-            uorgList.push({
+            const entry = {
                 codigo:          fv('f-codigo').trim(),
                 ugVinculada:     fv('f-ugVinculada').trim(),
                 nome:            fv('f-nome').trim(),
@@ -686,17 +953,63 @@
                 nrDocCriacao:    fv('f-nrDocCriacao').trim(),
                 codigoSiorg:     fv('f-codigoSiorg').trim(),
                 almoxarifado:    almoxi ? almoxi.value : 'NAO',
-            });
+            };
+            if (editingIdx >= 0) {
+                uorgList[editingIdx] = entry;
+                editingIdx = -1;
+                btnAddUorg.textContent = '+ Adicionar UORG à Lista';
+                btnAddUorg.classList.remove('editing');
+            } else {
+                uorgList.push(entry);
+            }
             renderUorgTable();
             clearUorgForm();
             uorgResult.className = 'result';
         });
 
+        function editUorg(idx) {
+            editingIdx = idx;
+            const u = uorgList[idx];
+            const map = {
+                'f-codigo': 'codigo', 'f-ugVinculada': 'ugVinculada', 'f-nome': 'nome',
+                'f-sigla': 'sigla', 'f-nomeReduzido': 'nomeReduzido', 'f-endereco': 'endereco',
+                'f-cep': 'cep', 'f-uf': 'uf', 'f-municipio': 'municipio', 'f-pais': 'pais',
+                'f-telefone': 'telefone', 'f-ramal': 'ramal', 'f-email': 'email',
+                'f-cpfResponsavel': 'cpfResponsavel', 'f-nomeResponsavel': 'nomeResponsavel',
+                'f-matriculaSiape': 'matriculaSiape', 'f-portaria': 'portaria',
+                'f-uorgSubordinada': 'uorgSubordinada', 'f-dataCriacao': 'dataCriacao',
+                'f-nrDocCriacao': 'nrDocCriacao', 'f-codigoSiorg': 'codigoSiorg',
+            };
+            Object.entries(map).forEach(([id, key]) => { const el = document.getElementById(id); if (el) el.value = u[key] || ''; });
+            const radio = document.querySelector(`input[name="almoxarifado"][value="${u.almoxarifado || 'NAO'}"]`);
+            if (radio) radio.checked = true;
+            btnAddUorg.textContent = '✓ Salvar Alterações';
+            btnAddUorg.classList.add('editing');
+            openDadosUorg();
+            document.getElementById('f-codigo').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
         function renderUorgTable() {
             uorgTableBody.innerHTML = '';
             uorgList.forEach((u, idx) => {
+                const ok      = isComplete(u);
+                const missing = REQUIRED_FOR_GENERATE.filter(k => !u[k] || !String(u[k]).trim());
+                const badge   = ok
+                    ? '<span class="status-ok" title="Completo">✓</span>'
+                    : `<span class="status-warn" title="Faltam: ${missing.join(', ')}">⚠</span>`;
+                const checked = (u.almoxarifado === 'SIM') ? 'checked' : '';
                 const tr = document.createElement('tr');
-                tr.innerHTML = `<td>${u.codigo}</td><td>${u.nome}</td><td>${u.sigla}</td><td>${u.ugVinculada}</td><td><button class="btn-del" data-idx="${idx}">✕</button></td>`;
+                tr.innerHTML = `
+                    <td style="text-align:center">${badge}</td>
+                    <td>${u.codigo || '<em style="color:#bbb">—</em>'}</td>
+                    <td>${u.nome}</td>
+                    <td>${u.sigla}</td>
+                    <td style="font-size:11px;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${u.nomeResponsavel || ''}">${u.nomeResponsavel || ''}</td>
+                    <td style="text-align:center"><input type="checkbox" class="chk-almx" data-idx="${idx}" ${checked} title="Almoxarifado"></td>
+                    <td style="white-space:nowrap">
+                        <button class="btn-edit" data-idx="${idx}" title="Editar">✏</button>
+                        <button class="btn-del"  data-idx="${idx}" title="Remover">✕</button>
+                    </td>`;
                 uorgTableBody.appendChild(tr);
             });
             uorgCountEl.textContent = uorgList.length;
@@ -706,10 +1019,16 @@
         }
 
         uorgTableBody.addEventListener('click', e => {
-            const btn = e.target.closest('.btn-del');
-            if (!btn) return;
-            uorgList.splice(Number(btn.dataset.idx), 1);
-            renderUorgTable();
+            const del  = e.target.closest('.btn-del');
+            const edit = e.target.closest('.btn-edit');
+            if (del)  { uorgList.splice(Number(del.dataset.idx), 1); editingIdx = -1; btnAddUorg.textContent = '+ Adicionar UORG à Lista'; btnAddUorg.classList.remove('editing'); renderUorgTable(); }
+            if (edit) { editUorg(Number(edit.dataset.idx)); }
+        });
+
+        uorgTableBody.addEventListener('change', e => {
+            const chk = e.target.closest('.chk-almx');
+            if (!chk) return;
+            uorgList[Number(chk.dataset.idx)].almoxarifado = chk.checked ? 'SIM' : 'NAO';
         });
 
         document.getElementById('uorgUasg').addEventListener('input', renderUorgTable);
@@ -732,11 +1051,24 @@
             const orgao = fv('uorgOrgao').trim();
             if (!uasg || !orgao) { showUorgResult('error', 'Informe UASG e Código do Órgão antes de gerar.'); return; }
             if (!uorgList.length) { showUorgResult('error', 'Adicione ao menos uma UORG à lista.'); return; }
-
+            const incompletas = uorgList.filter(u => !isComplete(u));
+            if (incompletas.length) {
+                // Agrupa quais campos estão faltando e em quantas UORGs
+                const campoCount = {};
+                incompletas.forEach(u => {
+                    REQUIRED_FOR_GENERATE.filter(k => !u[k] || !String(u[k]).trim())
+                        .forEach(k => { campoCount[k] = (campoCount[k] || 0) + 1; });
+                });
+                const detalhe = Object.entries(campoCount)
+                    .sort((a, b) => b[1] - a[1])
+                    .map(([k, n]) => `<strong>${k}</strong> (${n} UORG${n > 1 ? 's' : ''})`)
+                    .join(', ');
+                showUorgResult('error', `${incompletas.length} UORG(s) incompletas. Campos faltando: ${detalhe}`);
+                return;
+            }
             btnGerarUorg.disabled = true;
             uorgLoading.classList.add('show');
             uorgResult.className = 'result';
-
             try {
                 const response = await fetch('/api/uorg', {
                     method:  'POST',

@@ -2,10 +2,33 @@
 
 const fs   = require('fs');
 const path = require('path');
-const UorgFormatterService = require('../services/uorgFormatterService');
+const UorgFormatterService      = require('../services/uorgFormatterService');
+const UorgPdfExtractorService   = require('../services/uorgPdfExtractorService');
 
-const formatter = new UorgFormatterService();
+const formatter  = new UorgFormatterService();
+const extractor  = new UorgPdfExtractorService();
 
+// ── POST /api/uorg/extract ─────────────────────────────────────────────────
+exports.extractFromPdf = async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ success: false, error: 'Nenhum arquivo enviado.' });
+        }
+        const uorgs = await extractor.extractFromBuffer(req.file.buffer);
+        if (!uorgs.length) {
+            return res.status(400).json({
+                success: false,
+                error: 'Nenhuma UORG encontrada. Verifique se o arquivo é o RelatorioDependUORG gerado pelo SISCOFIS OM.',
+            });
+        }
+        return res.json({ success: true, data: { uorgs, count: uorgs.length } });
+    } catch (err) {
+        console.error('Erro ao extrair UORG do PDF:', err);
+        return res.status(500).json({ success: false, error: err.message });
+    }
+};
+
+// ── POST /api/uorg ─────────────────────────────────────────────────────────
 exports.generate = (req, res) => {
     try {
         const { header, uorgs } = req.body;
