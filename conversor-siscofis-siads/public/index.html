@@ -813,7 +813,7 @@
                 if (data.success) {
                     let added = 0;
                     for (const u of data.data.uorgs) {
-                        if (!uorgList.find(x => x.nome === u.nome)) { uorgList.push(u); added++; }
+                        uorgList.push(u); added++;
                     }
                     // Auto-gera códigos sequenciais usando UASG como prefixo (se disponível)
                     const uasgBase = fv('uorgUasg').trim();
