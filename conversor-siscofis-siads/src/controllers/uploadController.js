@@ -32,10 +32,19 @@ class UploadController {
             // Extrair dados do PDF
             console.log(`\n1. Extraindo dados do PDF...`);
             const extractedData = await this.pdfExtractorService.extractData(pdfFilePath);
+
+            // Injeta CPF do usuário logado no header para o campo 6 da linha H
+            if (req.session && req.session.user && req.session.user.cpf) {
+                extractedData.header.bigNumber = req.session.user.cpf;
+            }
             
             // Formatar dados para TXT
             console.log(`2. Formatando dados para TXT...`);
-            const formattedOutput = this.txtFormatterService.formatData(extractedData);
+            const formatOptions = {};
+            if (req.body.uorg) {
+                formatOptions.almoxarifadoCode = req.body.uorg.trim();
+            }
+            const formattedOutput = this.txtFormatterService.formatData(extractedData, formatOptions);
             
             // Salvar no diretório de output
             const outputDir = path.join(__dirname, '../../output');
@@ -48,7 +57,7 @@ class UploadController {
             const dia = String(now.getDate()).padStart(2, '0');
             const mes = String(now.getMonth() + 1).padStart(2, '0');
             const ano = now.getFullYear();
-            const om = extractedData.om || 'OM';
+            const om = (req.session && req.session.user && req.session.user.om) || extractedData.om || 'OM';
             const contaContabil = extractedData.contaContabil || '000000000';
             const contaCorrente = extractedData.contaCorrente || '0001';
             const outputFileName = `${om}_${contaContabil}_${contaCorrente}_${dia}-${mes}-${ano}.txt`;
@@ -108,6 +117,57 @@ class UploadController {
                 success: false,
                 error: 'Erro ao processar o arquivo',
                 message: error.message 
+            });
+        }
+    }
+
+    /**
+     * Detecta o tipo de inventário a partir do título do PDF
+     * Retorna { inventoryType: 'POR_CONTA' | 'POR_DEPOSITO', title }
+     */
+    async detectInventoryType(req, res) {
+        try {
+            if (!req.file) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'Nenhum arquivo foi enviado.'
+                });
+            }
+
+            const pdfFilePath = req.file.path;
+
+            // Extrai apenas o título do PDF
+            const dataBuffer = fs.readFileSync(pdfFilePath);
+            const pdfParse = require('pdf-parse');
+            const pdfData = await pdfParse(dataBuffer);
+
+            const title = this.pdfExtractorService.extractTitle(pdfData.text);
+
+            // Determina o tipo de inventário — busca no texto COMPLETO do PDF,
+            // não apenas no título (que pode falhar se não tiver colchetes)
+            const isPorDeposito = /POR\s+DEP[ÓO]SITO/i.test(pdfData.text) && !/POR\s+CONTA/i.test(pdfData.text);
+            const inventoryType = isPorDeposito ? 'POR_DEPOSITO' : 'POR_CONTA';
+
+            // Limpa o arquivo temporário
+            fs.unlinkSync(pdfFilePath);
+
+            res.status(200).json({
+                success: true,
+                data: {
+                    inventoryType,
+                    title: title
+                }
+            });
+
+        } catch (error) {
+            console.error('Erro ao detectar tipo de inventário:', error);
+            if (req.file && req.file.path && fs.existsSync(req.file.path)) {
+                try { fs.unlinkSync(req.file.path); } catch (_) {}
+            }
+            res.status(500).json({
+                success: false,
+                error: 'Erro ao analisar o PDF',
+                message: error.message
             });
         }
     }

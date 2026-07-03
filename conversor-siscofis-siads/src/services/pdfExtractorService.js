@@ -83,8 +83,14 @@ class PdfExtractorService {
      * Extrai o título do relatório
      */
     extractTitle(text) {
-        // Procurar por "INVENTÁRIO DE ALMOXARIFADO"
+        // Procurar por "INVENTÁRIO DE ALMOXARIFADO [POR CONTA]" (com colchetes)
         let titleMatch = text.match(/INVENT.RIO\s+DE\s+ALMOXARIFADO.*?\]/i);
+        if (titleMatch) {
+            return titleMatch[0].replace(/\s+/g, ' ').trim();
+        }
+        
+        // Procurar por "INVENTÁRIO DE ALMOXARIFADO POR DEPÓSITO" (sem colchetes)
+        titleMatch = text.match(/INVENT[ÁA]RIO\s+DE\s+ALMOXARIFADO\s+POR\s+(CONTA|DEP[ÓO]SITO)/i);
         if (titleMatch) {
             return titleMatch[0].replace(/\s+/g, ' ').trim();
         }

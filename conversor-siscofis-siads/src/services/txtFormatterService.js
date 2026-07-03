@@ -22,10 +22,15 @@ class TxtFormatterService {
     /**
      * Monta o arquivo no formato solicitado (H, D, T)
      * @param {Object} extractedData { header: {...}, items: [...] }
+     * @param {Object} [options]
+     * @param {string} [options.almoxarifadoCode] Código UORG do SIADS p/ POR DEPÓSITO (campo 2 da linha D)
      * @returns {string} texto pronto para gravação
      */
-    formatData(extractedData) {
+    formatData(extractedData, options = {}) {
         console.log(`Formatando ${extractedData.items ? extractedData.items.length : 0} itens...`);
+        if (options.almoxarifadoCode) {
+            console.log(`  → Inventário POR DEPÓSITO — UORG SIADS: ${options.almoxarifadoCode}`);
+        }
         
         // Cabeçalho - Linha H
         const headerLine = this.formatHeaderRecord(extractedData.header);
@@ -62,8 +67,9 @@ class TxtFormatterService {
             });
             
             itemsComSufixo.forEach((item, index) => {
-                // Passar a conta contábil para cada detalhe
-                const detailLine = this.formatDetailRecord(item, item.contaContabil || extractedData.contaContabil);
+                // Passar conta contábil e código do almoxarifado (UORG) para cada detalhe
+                const almoxCode = options.almoxarifadoCode || null;
+                const detailLine = this.formatDetailRecord(item, item.contaContabil || extractedData.contaContabil, almoxCode);
                 detailLines.push(detailLine);
             });
         }
@@ -96,24 +102,24 @@ class TxtFormatterService {
         return fields.join(this.sep) + this.term;
     }
 
-    formatDetailRecord(item = {}, contaContabil = '') {
+    formatDetailRecord(item = {}, contaContabil = '', almoxarifadoCode = null) {
         // Exemplo D ¥ AB99999 ¥ C2805006045 ¥  VALVULA ... ¥ UN ¥ 115610139 ¥ PA60T0000 ¥ 179014 ¥ 40000 ¥ FALSE ¥ £
         // Mapeamento (assunções):
         // - tipo D
-        // - campo1: fornecedor/cod interno -> item.fornecedor || item.codFornecedor || ''
-        // - campo2: material code -> item.codMat || item.nrOrd || ''
-        // - campo3: descrição -> item.especificacao || item.nomeMaterial || ''
-        // - campo4: unidade -> item.unidade || 'UN'
-        // - campo5: conta contábil (vem do PDF, parâmetro contaContabil)
-        // - campo6..n: códigos adicionais -> item.cod1, item.cod2 ... qtde, valor, flag
+        // - campo2: código do almoxarifado (UORG do SIADS p/ POR DEPÓSITO, senão fixo SiadsId136002)
+        // - campo3: material code -> item.codMat || item.nrOrd || ''
+        // - campo4: descrição -> item.especificacao || item.nomeMaterial || ''
+        // - campo5: unidade -> item.unidade || 'UN'
+        // - campo6: conta contábil (vem do PDF, parâmetro contaContabil)
+        // - campo7: códigos adicionais -> item.cod1, item.cod2 ... qtde, valor, flag
 
         const fields = [];
         fields.push('D');
-        // Campo 2: Código do almoxarifado
-        fields.push('SiadsId136002');
+        // Campo 2: Código do almoxarifado (UORG do SIADS ou fallback fixo)
+        fields.push(almoxarifadoCode || 'SiadsId136002');
         // Campo 3: Número da Ficha extraído do PDF (com sufixo A, B, C... se duplicado)
         fields.push(this.normalize(item.nrFichaComSufixo || item.nrFicha || item.numeroFicha || item.nrficha || ''));
-        fields.push(this.normalize(item.especificacao || item.nomeMaterial || ''));
+        fields.push(this.truncate(this.normalize(item.especificacao || item.nomeMaterial || ''), 299));
         fields.push(this.normalize(item.unidade || 'UN'));
         // Campo 5: Conta Contábil vem do PDF como parâmetro
         fields.push(this.normalize(contaContabil || item.codInterno1 || item.cod1 || item.campo5 || ''));
@@ -164,6 +170,11 @@ class TxtFormatterService {
     normalize(str) {
         if (str === null || str === undefined) return '';
         return String(str).trim();
+    }
+
+    truncate(str, maxLen) {
+        if (str === null || str === undefined) return '';
+        return str.length > maxLen ? str.substring(0, maxLen) : str;
     }
 
     normalizeNumber(value) {

@@ -51,7 +51,7 @@ D ¥ AB99999 ¥ C2805006045 ¥ VALVULA ... ¥ UN ¥ 115610139 ¥ PA60T0000 ¥ 17
 Significado dos campos:
 
 D → inclusão/alteração
-Código do almoxarifado
+Código do almoxarifado / Código UORG
 Código do material
 Descrição
 Unidade de medida

@@ -9,6 +9,11 @@ router.post('/', upload.single('pdf'), (req, res) => {
     uploadController.handleUpload(req, res);
 });
 
+// Rota para detectar o tipo de inventário (POR_CONTA ou POR_DEPOSITO)
+router.post('/detect', upload.single('pdf'), (req, res) => {
+    uploadController.detectInventoryType(req, res);
+});
+
 // Rota para listar arquivos processados
 router.get('/files', (req, res) => {
     uploadController.listProcessedFiles(req, res);

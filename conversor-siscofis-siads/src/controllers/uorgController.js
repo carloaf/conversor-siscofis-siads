@@ -14,6 +14,32 @@ exports.extractFromPdf = async (req, res) => {
         if (!req.file) {
             return res.status(400).json({ success: false, error: 'Nenhum arquivo enviado.' });
         }
+
+        // Primeiro verifica se o PDF é um INVENTÁRIO DE ALMOXARIFADO
+        // (caso o usuário tenha enviado no lugar errado)
+        const pdfText = String(req.file.buffer);
+        // pdf-parse é assíncrono, mas podemos tentar detectar no buffer
+        let isInventory = false;
+        let isPorDeposito = false;
+        try {
+            const pdfParse = require('pdf-parse');
+            const pdfData = await pdfParse(req.file.buffer);
+            const txt = pdfData.text;
+            if (/INVENT[ÁA]RIO\s+DE\s+ALMOXARIFADO/i.test(txt)) {
+                isInventory = true;
+                isPorDeposito = /POR\s+DEP[ÓO]SITO/i.test(txt) && !/POR\s+CONTA/i.test(txt);
+            }
+        } catch (_) { /* ignora falha na detecção */ }
+
+        if (isInventory) {
+            const tipo = isPorDeposito ? 'POR DEPÓSITO' : 'POR CONTA';
+            return res.status(400).json({
+                success: false,
+                error: `Este arquivo é um "INVENTÁRIO DE ALMOXARIFADO ${tipo}". Use a aba "📄 Conversão de Itens" para processá-lo.`,
+                hint: 'inventory',
+            });
+        }
+
         const uorgs = await extractor.extractFromBuffer(req.file.buffer);
         if (!uorgs.length) {
             return res.status(400).json({

@@ -409,7 +409,7 @@
         <!-- Navegação por abas -->
         <div class="tabs">
             <button class="tab-btn active" data-tab="uorg">📋 Conversão de UORG</button>
-            <button class="tab-btn" data-tab="itens">📄 Conversão de Itens</button>
+            <button class="tab-btn" data-tab="itens">📄 Conversão de Itens por Depósito</button>
         </div>
 
         <!-- =================== ABA: UORG =================== -->
@@ -725,6 +725,11 @@
                     <div class="file-size" id="fileSize"></div>
                 </div>
 
+                <div class="form-group" id="uorgField" style="display:none; margin-top:16px">
+                    <input type="text" id="uorgInput" maxlength="100" style="color: #999; font-size: 11px; border-radius: 6px;" placeholder="Ex: 00071 — será inserido em todas as linhas">
+                    <label for="uorgInput">* Digite o Código do Almoxarifado no SIADS (UORG)</label>
+                </div>
+
                 <button type="submit" class="btn" id="uploadBtn" disabled>
                     Processar PDF
                 </button>
@@ -861,6 +866,11 @@
                     showImportResult('success',
                         `✓ ${added} UORG(s) importadas do PDF (${data.data.count - added} ignoradas por duplicidade). ` +
                         `Use <strong>⚠</strong> na tabela para completar os campos faltantes.`);
+                } else if (data.hint === 'inventory') {
+                    // PDF de inventário enviado na aba errada — sugere trocar de aba
+                    showImportResult('error',
+                        `<strong>Arquivo incorreto para esta aba!</strong><br>${data.error}<br><br>` +
+                        `<button class="btn-import" onclick="document.querySelector('.tab-btn[data-tab=itens]').click()" style="background:#1a6fa8">📄 Ir para Conversão de Itens</button>`);
                 } else {
                     showImportResult('error', data.error);
                 }
@@ -1228,6 +1238,10 @@
         const uploadForm = document.getElementById('uploadForm');
         const loading    = document.getElementById('loading');
         const result     = document.getElementById('result');
+        const uorgField  = document.getElementById('uorgField');
+        const uorgInput  = document.getElementById('uorgInput');
+
+        let requireUorg = false; // true quando o inventário é POR DEPÓSITO
 
         uploadArea.addEventListener('click', () => fileInput.click());
         fileInput.addEventListener('change', e => handleFile(e.target.files[0]));
@@ -1249,16 +1263,60 @@
             fileName.textContent = `📄 ${file.name}`;
             fileSize.textContent = `Tamanho: ${(file.size / 1024).toFixed(2)} KB`;
             fileInfo.classList.add('show');
-            uploadBtn.disabled = false;
             result.classList.remove('show');
+            // Esconde campo UORG e reseta estado
+            uorgField.style.display = 'none';
+            uorgInput.value = '';
+            requireUorg = false;
+            uploadBtn.disabled = true;
+            // Detecta tipo de inventário
+            detectAndSetInventoryType(file);
         }
+
+        async function detectAndSetInventoryType(file) {
+            const fd = new FormData();
+            fd.append('pdf', file);
+            try {
+                const resp = await fetch('/api/upload/detect', { method: 'POST', body: fd });
+                const data = await resp.json();
+                if (data.success && data.data.inventoryType === 'POR_DEPOSITO') {
+                    requireUorg = true;
+                    uorgField.style.display = 'block';
+                    // Só habilita quando UORG for preenchido
+                    uploadBtn.disabled = !uorgInput.value.trim();
+                } else {
+                    requireUorg = false;
+                    uorgField.style.display = 'none';
+                    uploadBtn.disabled = false;
+                }
+            } catch (err) {
+                // Fallback: permite prosseguir sem UORG
+                requireUorg = false;
+                uorgField.style.display = 'none';
+                uploadBtn.disabled = false;
+            }
+        }
+
+        // Atualiza estado do botão quando o campo UORG é preenchido
+        uorgInput.addEventListener('input', () => {
+            if (requireUorg) {
+                uploadBtn.disabled = !uorgInput.value.trim();
+            }
+        });
 
         uploadForm.addEventListener('submit', async e => {
             e.preventDefault();
             const file = fileInput.files[0];
             if (!file) return;
+            if (requireUorg && !uorgInput.value.trim()) {
+                showResult('error', 'Informe o código UORG do SIADS para este depósito.');
+                return;
+            }
             const formData = new FormData();
             formData.append('pdf', file);
+            if (requireUorg && uorgInput.value.trim()) {
+                formData.append('uorg', uorgInput.value.trim());
+            }
             uploadBtn.disabled = true;
             loading.classList.add('show');
             result.classList.remove('show');
