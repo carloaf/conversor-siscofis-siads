@@ -389,6 +389,59 @@
             color: #888;
             min-height: 18px;
         }
+
+        /* ======================== TABELA DE ITENS ======================== */
+        .items-review-section { display: none; margin-top: 24px; }
+        .items-review-section.show { display: block; }
+        .validation-box {
+            padding: 12px 18px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+        .validation-box.success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .validation-box.error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .validation-box.warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+        }
+        .items-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 12px; }
+        .items-table th { background: #6B7C3A; color: white; padding: 8px 6px; text-align: left; font-weight: 600; font-size: 11px; }
+        .items-table td { padding: 6px; border-bottom: 1px solid #e0e8cc; color: #333; }
+        .items-table tr:last-child td { border-bottom: none; }
+        .items-table tr:nth-child(even) { background: #f5f7f0; }
+        .items-table tr:hover { background: #eef1e6; }
+        .items-total-row { font-weight: bold; background: #d4edda !important; }
+        .btn-generate-file {
+            display: block;
+            margin: 14px auto 0;
+            width: 65%;
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #1a6fa8 0%, #0d4a75 100%);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.3s ease;
+            letter-spacing: 0.3px;
+        }
+        .btn-generate-file:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 18px rgba(13, 74, 117, 0.45);
+        }
     </style>
 </head>
 <body>
@@ -726,18 +779,50 @@
                 </div>
 
                 <div class="form-group" id="uorgField" style="display:none; margin-top:16px">
-                    <input type="text" id="uorgInput" maxlength="100" style="color: #999; font-size: 11px; border-radius: 6px;" placeholder="Ex: 00071 — será inserido em todas as linhas">
-                    <label for="uorgInput">* Digite o Código do Almoxarifado no SIADS (UORG)</label>
+                    <label for="uorgInput" style="font-size:13px;font-weight:600;color:#333;margin-bottom:6px">* Digite o Código do Almoxarifado no SIADS (UORG)</label>
+                    <input type="text" id="uorgInput" maxlength="100" style="padding:8px;font-size:13px;border:1px solid #c8d4a0;border-radius:6px" placeholder="Ex: 00071 — será inserido em todas as linhas">
                 </div>
 
                 <button type="submit" class="btn" id="uploadBtn" disabled>
-                    Processar PDF
+                    Importar e Visualizar Itens
                 </button>
             </form>
 
             <div class="loading" id="loading">
                 <div class="spinner"></div>
                 <div>Processando arquivo...</div>
+            </div>
+
+            <!-- Tabela de revisão de itens -->
+            <div class="items-review-section" id="itemsReviewSection">
+                <div class="form-section">
+                    <h3>Itens Extraídos (<span id="itemsCount">0</span>)</h3>
+                    <div id="validationBox" style="display:none"></div>
+                    <p style="font-size:12px;color:#666;margin-bottom:12px">Revise os itens abaixo. Você pode excluir itens indesejados antes de gerar o arquivo.</p>
+                    <div style="max-height:400px;overflow-y:auto;border:1px solid #d0d9b3;border-radius:8px">
+                        <table class="items-table">
+                            <thead>
+                                <tr>
+                                    <th style="width:80px">Código</th>
+                                    <th>Descrição</th>
+                                    <th style="width:70px;text-align:right">Qtd</th>
+                                    <th style="width:60px;text-align:right">Vlr Unit</th>
+                                    <th style="width:80px;text-align:right">Vlr Total</th>
+                                    <th style="width:50px"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="itemsTableBody"></tbody>
+                            <tfoot>
+                                <tr class="items-total-row">
+                                    <td colspan="4" style="text-align:right;padding-right:10px">TOTAL GERAL:</td>
+                                    <td style="text-align:right;font-size:13px" id="totalGeral">R$ 0,00</td>
+                                    <td></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                    <button type="button" class="btn-generate-file" id="btnGerarArquivo">📥 Gerar Arquivo TXT</button>
+                </div>
             </div>
 
             <div class="result" id="result"></div>
@@ -1240,8 +1325,16 @@
         const result     = document.getElementById('result');
         const uorgField  = document.getElementById('uorgField');
         const uorgInput  = document.getElementById('uorgInput');
+        const itemsReviewSection = document.getElementById('itemsReviewSection');
+        const itemsTableBody = document.getElementById('itemsTableBody');
+        const itemsCountEl = document.getElementById('itemsCount');
+        const totalGeralEl = document.getElementById('totalGeral');
+        const btnGerarArquivo = document.getElementById('btnGerarArquivo');
+        const validationBox = document.getElementById('validationBox');
 
         let requireUorg = false; // true quando o inventário é POR DEPÓSITO
+        let extractedData = null; // Dados extraídos do PDF
+        let itemsList = []; // Lista de itens editável
 
         uploadArea.addEventListener('click', () => fileInput.click());
         fileInput.addEventListener('change', e => handleFile(e.target.files[0]));
@@ -1320,18 +1413,148 @@
             uploadBtn.disabled = true;
             loading.classList.add('show');
             result.classList.remove('show');
+            itemsReviewSection.classList.remove('show');
             try {
-                const response = await fetch('/api/upload', { method: 'POST', body: formData });
+                // Apenas extrai dados, não gera arquivo ainda
+                const response = await fetch('/api/upload/extract-only', { method: 'POST', body: formData });
+                const data = await response.json();
+                if (data.success) {
+                    extractedData = data.data.extractedData;
+                    // Converte valores string para números ao mapear itens
+                    itemsList = data.data.items.map(item => ({
+                        ...item,
+                        quantidade: parseFloat(item.qtde) || 0,
+                        valorUnitario: parseFloat(String(item.valorUnit || '0').replace(/\./g, '').replace(',', '.')) || 0,
+                        valorTotal: parseFloat(String(item.valorTotal || '0').replace(/\./g, '').replace(',', '.')) || 0,
+                        codigoMaterial: item.codMat || '',
+                        descricao: item.nomeMaterial || item.especificacao || ''
+                    }));
+                    renderItemsTable();
+                    // Exibir resultado da validação
+                    if (extractedData.validacao) {
+                        const v = extractedData.validacao;
+                        let className = 'warning';
+                        if (v.valida === true) className = 'success';
+                        if (v.valida === false) className = 'error';
+                        validationBox.className = `validation-box ${className}`;
+                        validationBox.innerHTML = v.mensagem;
+                        validationBox.style.display = 'block';
+                    } else {
+                        validationBox.style.display = 'none';
+                    }
+                    itemsReviewSection.classList.add('show');
+                    result.classList.remove('show');
+                } else {
+                    showResult('error', `Erro: ${data.message || data.error}`);
+                }
+            } catch (error) {
+                showResult('error', `Erro ao processar arquivo: ${error.message}`);
+            } finally {
+                loading.classList.remove('show');
+                uploadBtn.disabled = false;
+            }
+        });
+
+        function renderItemsTable() {
+            itemsTableBody.innerHTML = '';
+            let total = 0;
+            itemsList.forEach((item, idx) => {
+                const vlrTotal = parseFloat(item.valorTotal) || 0;
+                const vlrUnit = parseFloat(item.valorUnitario) || 0;
+                const qtd = parseFloat(item.quantidade) || 0;
+                total += vlrTotal;
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="font-family:monospace;font-size:11px">${item.codigoMaterial || ''}</td>
+                    <td style="font-size:11px">${item.descricao || ''}</td>
+                    <td style="text-align:right">${qtd.toFixed(0)}</td>
+                    <td style="text-align:right">R$ ${vlrUnit.toFixed(2)}</td>
+                    <td style="text-align:right">R$ ${vlrTotal.toFixed(2)}</td>
+                    <td style="text-align:center">
+                        <button class="btn-del" data-idx="${idx}" title="Excluir item">✕</button>
+                    </td>
+                `;
+                itemsTableBody.appendChild(tr);
+            });
+            itemsCountEl.textContent = itemsList.length;
+            totalGeralEl.textContent = `R$ ${total.toFixed(2)}`;
+
+            // Recalcular validação se houver dados extraídos e total do inventário
+            if (extractedData && extractedData.totalInventario) {
+                const totalInv = parseFloat(extractedData.totalInventario.replace(/\./g, '').replace(',', '.'));
+                const diferenca = Math.abs(total - totalInv);
+                const tolerancia = 0.02;
+
+                let v = { valida: true, mensagem: '' };
+                if (diferenca > tolerancia) {
+                    v = {
+                        valida: false,
+                        mensagem: `⚠ DIVERGÊNCIA: A soma dos itens (R$ ${total.toFixed(2).replace('.', ',')}) não corresponde ao Total do Inventário (R$ ${totalInv.toFixed(2).replace('.', ',')}) — diferença de R$ ${diferenca.toFixed(2).replace('.', ',')}`
+                    };
+                } else {
+                    v = {
+                        valida: true,
+                        mensagem: `✓ Validado: Soma dos itens (R$ ${total.toFixed(2).replace('.', ',')}) confere com o Total do Inventário`
+                    };
+                }
+
+                let className = 'warning';
+                if (v.valida === true) className = 'success';
+                if (v.valida === false) className = 'error';
+                validationBox.className = `validation-box ${className}`;
+                validationBox.innerHTML = v.mensagem;
+                validationBox.style.display = 'block';
+            }
+        }
+
+        itemsTableBody.addEventListener('click', e => {
+            const del = e.target.closest('.btn-del');
+            if (del) {
+                const idx = Number(del.dataset.idx);
+                if (confirm(`Excluir item: ${itemsList[idx].descricao}?`)) {
+                    itemsList.splice(idx, 1);
+                    renderItemsTable();
+                }
+            }
+        });
+
+        btnGerarArquivo.addEventListener('click', async () => {
+            if (!itemsList.length) {
+                showResult('error', 'Não há itens para gerar o arquivo.');
+                return;
+            }
+            btnGerarArquivo.disabled = true;
+            loading.classList.add('show');
+            result.classList.remove('show');
+            try {
+                const payload = {
+                    extractedData,
+                    items: itemsList,
+                    uorg: requireUorg ? uorgInput.value.trim() : undefined,
+                };
+                const response = await fetch('/api/upload/generate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
                 const data = await response.json();
                 if (data.success) {
                     const now   = new Date().toLocaleString('pt-BR');
                     const autor = currentUser ? `${currentUser.postoGrad} ${currentUser.nomeGuerra}` : 'Não identificado';
                     const cpf   = currentUser ? currentUser.cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4') : '';
+                    
+                    // Formatar valores monetários
+                    const fmtMoney = (v) => 'R$ ' + parseFloat(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                    const valores = data.data.valores || {};
+                    const valoresInfo = valores.totalOriginal ? `
+                        <strong>Valor total original:</strong> ${fmtMoney(valores.totalOriginal)}<br>
+                        ${valores.qtdExcluidos > 0 ? `<strong>Itens excluídos:</strong> ${valores.qtdExcluidos} (${fmtMoney(valores.excluidos)})<br>` : ''}
+                        <strong>Valor total final:</strong> ${fmtMoney(valores.totalAtual)}<br>
+                    ` : '';
+                    
+                    itemsReviewSection.classList.remove('show');
                     showResult('success', `
-                        <strong>✓ Arquivo processado com sucesso!</strong><br><br>
+                        <strong>✓ Arquivo gerado com sucesso!</strong><br><br>
                         <strong>Arquivo gerado:</strong> ${data.data.outputFile}<br>
                         <strong>Total de itens:</strong> ${data.data.itemsCount}<br>
-                        <strong>Depósito:</strong> ${data.data.extractedData.deposito}<br>
+                        <strong>Depósito:</strong> ${data.data.deposito}<br>
+                        ${valoresInfo}
                         <div class="completion-card">
                             <strong>Registro de Conversão</strong>
                             Arquivo gerado pelo sistema Conversor-SISCOFIS-SIADS<br>
@@ -1345,10 +1568,10 @@
                     showResult('error', `Erro: ${data.message || data.error}`);
                 }
             } catch (error) {
-                showResult('error', `Erro ao processar arquivo: ${error.message}`);
+                showResult('error', `Erro ao gerar arquivo: ${error.message}`);
             } finally {
                 loading.classList.remove('show');
-                uploadBtn.disabled = false;
+                btnGerarArquivo.disabled = false;
             }
         });
 

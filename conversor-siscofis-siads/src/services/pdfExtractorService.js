@@ -32,10 +32,43 @@ class PdfExtractorService {
             console.log('=== FIM DO TRECHO ===\n');
             
             const tipoMaterial = this.extractTipoMaterial(pdfData.text);
+            const items = this.extractItems(pdfData.text);
+            const totalInventario = this.extractTotalInventario(pdfData.text);
+
+            // Calcular soma dos valores totais dos itens (campo 8)
+            const somaItens = items.reduce((acc, item) => {
+                const valor = parseFloat(item.valorTotal.replace(/\./g, '').replace(',', '.'));
+                return acc + (isNaN(valor) ? 0 : valor);
+            }, 0);
+
+            // Verificar se a soma bate com o total do inventário
+            let validacao = { valida: true, mensagem: '' };
+            if (totalInventario !== null) {
+                const diferenca = Math.abs(somaItens - totalInventario);
+                const tolerancia = 0.02; // Tolerância de 2 centavos para erros de arredondamento
+                
+                if (diferenca > tolerancia) {
+                    validacao = {
+                        valida: false,
+                        mensagem: `⚠ DIVERGÊNCIA: A soma dos itens (R$ ${somaItens.toFixed(2).replace('.', ',')}) não corresponde ao Total do Inventário (R$ ${totalInventario.toFixed(2).replace('.', ',')}) — diferença de R$ ${diferenca.toFixed(2).replace('.', ',')}`
+                    };
+                } else {
+                    validacao = {
+                        valida: true,
+                        mensagem: `✓ Validado: Soma dos itens (R$ ${somaItens.toFixed(2).replace('.', ',')}) confere com o Total do Inventário`
+                    };
+                }
+            } else {
+                validacao = {
+                    valida: null,
+                    mensagem: '⚠ Total do Inventário não encontrado no PDF — não foi possível validar'
+                };
+            }
+
             const extractedData = {
                 title: this.extractTitle(pdfData.text),
                 dates: this.extractDates(pdfData.text),
-                items: this.extractItems(pdfData.text),
+                items,
                 totals: this.extractTotals(pdfData.text),
                 deposito: this.extractDeposito(pdfData.text),
                 codigoUG: this.extractCodigoUG(pdfData.text),
@@ -43,6 +76,9 @@ class PdfExtractorService {
                 contaCorrente: this.extractContaCorrente(pdfData.text),
                 om: this.extractOM(pdfData.text),
                 tipoMaterial,
+                totalInventario: totalInventario ? totalInventario.toFixed(2).replace('.', ',') : null,
+                somaItens: somaItens.toFixed(2).replace('.', ','),
+                validacao,
                 header: {
                     unit: this.extractCodigoUG(pdfData.text) || '00001',
                     co: tipoMaterial
@@ -55,6 +91,9 @@ class PdfExtractorService {
             console.log(`  → Conta Corrente: ${extractedData.contaCorrente}`);
             console.log(`  → OM: ${extractedData.om}`);
             console.log(`  → Tipo Material: ${tipoMaterial} (${tipoMaterial === 'CO' ? 'Material de Consumo' : 'Material Permanente'})`);
+            console.log(`  → Total Inventário: R$ ${extractedData.totalInventario || 'não encontrado'}`);
+            console.log(`  → Soma Itens: R$ ${extractedData.somaItens}`);
+            console.log(`  → ${validacao.mensagem}`);
             return extractedData;
             
         } catch (error) {
@@ -292,6 +331,29 @@ class PdfExtractorService {
         }
 
         return items;
+    }
+
+    /**
+     * Extrai o Total do Inventário do PDF
+     */
+    extractTotalInventario(text) {
+        // Procurar por "TOTAL DO INVENTÁRIO" ou "TOTAL" seguido de valor
+        const patterns = [
+            /TOTAL\s+DO\s+INVENT[ÁA]RIO.*?R\$\s*([\d.,]+)/i,
+            /TOTAL\s+GERAL.*?R\$\s*([\d.,]+)/i,
+            /TOTAL\s*:\s*R\$\s*([\d.,]+)/i,
+        ];
+
+        for (const pattern of patterns) {
+            const match = text.match(pattern);
+            if (match) {
+                // Remove pontos de milhares e substitui vírgula por ponto
+                const valorStr = match[1].replace(/\./g, '').replace(',', '.');
+                return parseFloat(valorStr);
+            }
+        }
+
+        return null;
     }
 
     /**
