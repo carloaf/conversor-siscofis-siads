@@ -154,7 +154,11 @@ class TxtFormatterService {
         items.forEach(it => {
             const q = parseFloat(String(it.qtde || it.quantidade || 0).toString().replace(',', '.')) || 0;
             // Usar valorTotal (valor do saldo) ao invés de valorUnit
-            const vTotal = parseFloat(String(it.valorTotal || it.vlrTotal || 0).toString().replace(/\./g, '').replace(',', '.')) || 0;
+            const raw = it.valorTotal || it.vlrTotal || 0;
+            // Se já é número, usa direto; se é string, converte do formato brasileiro
+            const vTotal = typeof raw === 'number'
+                ? raw
+                : parseFloat(String(raw).replace(/\./g, '').replace(',', '.')) || 0;
             totalQty += q;
             totalValue += vTotal;
         });
@@ -177,33 +181,30 @@ class TxtFormatterService {
         return str.length > maxLen ? str.substring(0, maxLen) : str;
     }
 
-    normalizeNumber(value) {
-        if (value === null || value === undefined) return '0';
-        // remove pontos e trocar vírgula por ponto
-        const s = String(value).replace(/\./g, '').replace(/,/g, '.');
+    /**
+     * Converte valor (número ou string formatada BR) para float
+     */
+    _parseBrazilianNumber(value) {
+        if (value === null || value === undefined) return 0;
+        if (typeof value === 'number') return value;
+        // String: remove pontos (milhares) e troca vírgula por ponto decimal
+        const s = String(value).replace(/\./g, '').replace(',', '.');
         const n = parseFloat(s);
-        if (isNaN(n)) return '0';
-        // Retornar sem casas decimais (conforme exemplo) ou arredondado
+        return isNaN(n) ? 0 : n;
+    }
+
+    normalizeNumber(value) {
+        const n = this._parseBrazilianNumber(value);
         return String(Math.round(n));
     }
 
     normalizeNumberInt(value) {
-        if (value === null || value === undefined) return '0';
-        // remove pontos e trocar vírgula por ponto
-        const s = String(value).replace(/\./g, '').replace(/,/g, '.');
-        const n = parseFloat(s);
-        if (isNaN(n)) return '0';
-        // Retornar como inteiro
+        const n = this._parseBrazilianNumber(value);
         return String(Math.floor(n));
     }
 
     normalizeNumberCentavos(value) {
-        if (value === null || value === undefined) return '0';
-        // remove pontos (separadores de milhares) e trocar vírgula por ponto
-        const s = String(value).replace(/\./g, '').replace(/,/g, '.');
-        const n = parseFloat(s);
-        if (isNaN(n)) return '0';
-        // Multiplicar por 100 para converter para centavos (inteiro)
+        const n = this._parseBrazilianNumber(value);
         return String(Math.round(n * 100));
     }
 

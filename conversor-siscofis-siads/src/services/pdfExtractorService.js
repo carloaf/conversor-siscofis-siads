@@ -32,8 +32,13 @@ class PdfExtractorService {
             console.log('=== FIM DO TRECHO ===\n');
             
             const tipoMaterial = this.extractTipoMaterial(pdfData.text);
-            const items = this.extractItems(pdfData.text);
+            let items = this.extractItems(pdfData.text);
             const totalInventario = this.extractTotalInventario(pdfData.text);
+
+            // Agrupar itens duplicados (mesma ficha e descrição)
+            const agrupamentoResult = this.agruparItensDuplicados(items);
+            items = agrupamentoResult.items;
+            const agrupamentos = agrupamentoResult.agrupamentos;
 
             // Calcular soma dos valores totais dos itens (campo 8)
             const somaItens = items.reduce((acc, item) => {
@@ -79,6 +84,8 @@ class PdfExtractorService {
                 totalInventario: totalInventario ? totalInventario.toFixed(2).replace('.', ',') : null,
                 somaItens: somaItens.toFixed(2).replace('.', ','),
                 validacao,
+                agrupamentos,
+                vlrTotal: totalInventario || somaItens,
                 header: {
                     unit: this.extractCodigoUG(pdfData.text) || '00001',
                     co: tipoMaterial
@@ -94,6 +101,9 @@ class PdfExtractorService {
             console.log(`  → Total Inventário: R$ ${extractedData.totalInventario || 'não encontrado'}`);
             console.log(`  → Soma Itens: R$ ${extractedData.somaItens}`);
             console.log(`  → ${validacao.mensagem}`);
+            if (agrupamentos.length > 0) {
+                console.log(`  → Itens agrupados: ${agrupamentos.length} grupos (total de ${agrupamentos.reduce((s, a) => s + a.quantidade, 0)} itens juntados)`);
+            }
             return extractedData;
             
         } catch (error) {
@@ -334,25 +344,132 @@ class PdfExtractorService {
     }
 
     /**
-     * Extrai o Total do Inventário do PDF
+     * Agrupa itens duplicados (mesma ficha e descrição)
+     * Soma quantidades e valores
      */
-    extractTotalInventario(text) {
-        // Procurar por "TOTAL DO INVENTÁRIO" ou "TOTAL" seguido de valor
-        const patterns = [
-            /TOTAL\s+DO\s+INVENT[ÁA]RIO.*?R\$\s*([\d.,]+)/i,
-            /TOTAL\s+GERAL.*?R\$\s*([\d.,]+)/i,
-            /TOTAL\s*:\s*R\$\s*([\d.,]+)/i,
-        ];
+    agruparItensDuplicados(items) {
+        const grupos = new Map();
+        const agrupamentos = [];
 
-        for (const pattern of patterns) {
-            const match = text.match(pattern);
-            if (match) {
-                // Remove pontos de milhares e substitui vírgula por ponto
-                const valorStr = match[1].replace(/\./g, '').replace(',', '.');
-                return parseFloat(valorStr);
+        for (const item of items) {
+            const chave = `${item.nrFicha}|${item.especificacao.trim().toLowerCase()}`;
+            
+            if (grupos.has(chave)) {
+                // Item duplicado - somar valores e quantidades
+                const itemExistente = grupos.get(chave);
+                const qtdeOriginal = parseInt(itemExistente.qtde);
+                const qtdeAdicional = parseInt(item.qtde);
+                const vlrOriginal = parseFloat(itemExistente.valorTotal.replace(/\./g, '').replace(',', '.'));
+                const vlrAdicional = parseFloat(item.valorTotal.replace(/\./g, '').replace(',', '.'));
+                
+                itemExistente.qtde = String(qtdeOriginal + qtdeAdicional);
+                const vlrTotalSomado = vlrOriginal + vlrAdicional;
+                itemExistente.valorTotal = vlrTotalSomado.toFixed(2).replace('.', ',');
+                
+                // Recalcular valor unitário
+                const vlrUnitario = vlrTotalSomado / (qtdeOriginal + qtdeAdicional);
+                itemExistente.valorUnit = vlrUnitario.toFixed(2).replace('.', ',');
+                
+                // Registrar agrupamento
+                const grupoExistente = agrupamentos.find(a => a.chave === chave);
+                if (grupoExistente) {
+                    grupoExistente.quantidade++;
+                    grupoExistente.nrOrds.push(item.nrOrd);
+                } else {
+                    agrupamentos.push({
+                        chave,
+                        nrFicha: item.nrFicha,
+                        especificacao: item.especificacao,
+                        quantidade: 2,
+                        nrOrds: [itemExistente.nrOrd, item.nrOrd]
+                    });
+                }
+            } else {
+                grupos.set(chave, { ...item });
             }
         }
 
+        return {
+            items: Array.from(grupos.values()),
+            agrupamentos
+        };
+    }
+
+    /**
+     * Extrai o Total do Inventário do PDF
+     * Se não encontrar um total geral, soma todos os subtotais das contas contábeis
+     */
+    extractTotalInventario(text) {
+        console.log('\n=== BUSCANDO TOTAL DO INVENTÁRIO ===');
+        
+        // Primeiro tenta encontrar um TOTAL GERAL único
+        const patternsGeral = [
+            /TOTAL\s+DO\s+INVENT[ÁA]RIO.*?R?\$?\s*([\d.,]+)/is,
+            /TOTAL\s+GERAL.*?R?\$?\s*([\d.,]+)/is,
+        ];
+        
+        for (let i = 0; i < patternsGeral.length; i++) {
+            const pattern = patternsGeral[i];
+            const match = text.match(pattern);
+            if (match) {
+                console.log(`✓ Total Geral encontrado: "${match[0].substring(0, 100).replace(/\n/g, ' ')}"`);
+                let valorStr = match[1].trim();
+                if (/^\d{1,3}(\.\d{3})*(,\d{2})$/.test(valorStr)) {
+                    valorStr = valorStr.replace(/\./g, '').replace(',', '.');
+                } else if (/^\d+(,\d{2})$/.test(valorStr)) {
+                    valorStr = valorStr.replace(',', '.');
+                }
+                const valor = parseFloat(valorStr);
+                if (!isNaN(valor) && valor > 0) {
+                    console.log(`✓ Total do Inventário (geral): R$ ${valor.toFixed(2)}`);
+                    return valor;
+                }
+            }
+        }
+
+        // Se não encontrou total geral, procura e soma todos os subtotais
+        console.log('\n--- Total Geral não encontrado, buscando subtotais para somar ---');
+        
+        const patternSubtotal = /SUB\s*TOTAL.*?(?:R?\$?\s*)?([\d.,]+)/gis;
+        let matches = [];
+        let match;
+        
+        while ((match = patternSubtotal.exec(text)) !== null) {
+            const valorStr = match[1].trim();
+            let valorFormatado = valorStr;
+            
+            // Converter formato brasileiro para float
+            if (/^\d{1,3}(\.\d{3})*(,\d{5})$/.test(valorFormatado)) {
+                // Formato: 1.234.567,12345 (com 5 decimais)
+                valorFormatado = valorFormatado.replace(/\./g, '').replace(',', '.');
+            } else if (/^\d{1,3}(\.\d{3})*(,\d{2})$/.test(valorFormatado)) {
+                // Formato: 1.234,56
+                valorFormatado = valorFormatado.replace(/\./g, '').replace(',', '.');
+            } else if (/^\d+(,\d+)$/.test(valorFormatado)) {
+                // Formato simples: 123,45
+                valorFormatado = valorFormatado.replace(',', '.');
+            }
+            
+            const valor = parseFloat(valorFormatado);
+            if (!isNaN(valor) && valor > 0) {
+                matches.push(valor);
+                console.log(`  → Subtotal encontrado: R$ ${valor.toFixed(2)} (string: "${valorStr}")`);
+            }
+        }
+
+        if (matches.length > 0) {
+            const somaSubtotais = matches.reduce((acc, val) => acc + val, 0);
+            console.log(`\n✓ Somados ${matches.length} subtotais = R$ ${somaSubtotais.toFixed(2)}`);
+            return somaSubtotais;
+        }
+
+        // Se não encontrou nada, buscar na última parte do documento
+        const lastLines = text.split('\n').slice(-50).join('\n');
+        console.log('\n--- Últimas 50 linhas do PDF ---');
+        console.log(lastLines);
+        console.log('--- Fim das últimas linhas ---\n');
+        
+        console.log('✗ Total do Inventário não encontrado');
         return null;
     }
 

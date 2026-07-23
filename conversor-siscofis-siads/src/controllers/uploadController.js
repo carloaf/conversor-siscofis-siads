@@ -294,7 +294,9 @@ class UploadController {
             // Calcula valores totais
             const vlrTotalOriginal = parseFloat(extractedData.vlrTotal || 0);
             const vlrTotalAtual = items.reduce((sum, item) => {
-                const vlr = parseFloat(item.vlrTotal || 0);
+                // O campo pode vir como valorTotal (float do frontend) ou vlrTotal
+                const raw = item.valorTotal || item.vlrTotal || 0;
+                const vlr = typeof raw === 'number' ? raw : parseFloat(String(raw).replace(/\./g, '').replace(',', '.')) || 0;
                 return sum + vlr;
             }, 0);
             const vlrExcluidos = vlrTotalOriginal - vlrTotalAtual;
@@ -304,6 +306,20 @@ class UploadController {
             console.log(`Valor total atual: R$ ${vlrTotalAtual.toFixed(2)}`);
             console.log(`Valor excluído: R$ ${vlrExcluidos.toFixed(2)}`);
             console.log(`Itens excluídos: ${qtdExcluidos}`);
+
+            // Verificar o que será gravado no TXT (linha T)
+            const valorTxtCentavos = Math.round(vlrTotalAtual * 100);
+            console.log(`Valor na linha T do TXT (campo 5, em centavos): ${valorTxtCentavos}`);
+            console.log(`Valor na linha T do TXT (campo 5, em reais): R$ ${(valorTxtCentavos / 100).toFixed(2)}`);
+            // Verificar se bate com o total do inventário
+            if (vlrTotalOriginal > 0) {
+                const diff = Math.abs(vlrTotalAtual - vlrTotalOriginal);
+                if (diff > 0.03) {
+                    console.log(`⚠ ATENÇÃO: Valor final (R$ ${vlrTotalAtual.toFixed(2)}) diverge do total original (R$ ${vlrTotalOriginal.toFixed(2)}) em R$ ${diff.toFixed(2)}`);
+                } else {
+                    console.log(`✓ Valor final (R$ ${vlrTotalAtual.toFixed(2)}) confere com o total original`);
+                }
+            }
 
             // Atualiza os itens no extractedData
             const dataToFormat = { ...extractedData, items: items };

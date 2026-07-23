@@ -14,6 +14,16 @@ router.post('/detect', upload.single('pdf'), (req, res) => {
     uploadController.detectInventoryType(req, res);
 });
 
+// Rota para extrair dados do PDF sem gerar arquivo (modo revisão)
+router.post('/extract-only', upload.single('pdf'), (req, res) => {
+    uploadController.extractOnly(req, res);
+});
+
+// Rota para gerar arquivo a partir de dados já extraídos
+router.post('/generate', (req, res) => {
+    uploadController.generateFromData(req, res);
+});
+
 // Rota para listar arquivos processados
 router.get('/files', (req, res) => {
     uploadController.listProcessedFiles(req, res);

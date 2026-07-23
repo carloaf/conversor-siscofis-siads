@@ -415,6 +415,27 @@
             border: 1px solid #ffeaa7;
             color: #856404;
         }
+        .agrupamentos-box {
+            padding: 12px 18px;
+            border-radius: 8px;
+            background: #e3f2fd;
+            border: 1px solid #90caf9;
+            color: #0d47a1;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+        .agrupamentos-box strong {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 13px;
+        }
+        .agrupamentos-box ul {
+            margin: 8px 0 0 20px;
+            padding: 0;
+        }
+        .agrupamentos-box li {
+            margin: 4px 0;
+        }
         .items-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 12px; }
         .items-table th { background: #6B7C3A; color: white; padding: 8px 6px; text-align: left; font-weight: 600; font-size: 11px; }
         .items-table td { padding: 6px; border-bottom: 1px solid #e0e8cc; color: #333; }
@@ -798,12 +819,13 @@
                 <div class="form-section">
                     <h3>Itens Extraídos (<span id="itemsCount">0</span>)</h3>
                     <div id="validationBox" style="display:none"></div>
+                    <div id="agrupamentosBox" style="display:none;margin-top:12px"></div>
                     <p style="font-size:12px;color:#666;margin-bottom:12px">Revise os itens abaixo. Você pode excluir itens indesejados antes de gerar o arquivo.</p>
                     <div style="max-height:400px;overflow-y:auto;border:1px solid #d0d9b3;border-radius:8px">
                         <table class="items-table">
                             <thead>
                                 <tr>
-                                    <th style="width:80px">Código</th>
+                                    <th style="width:60px">Nr Ord</th>
                                     <th>Descrição</th>
                                     <th style="width:70px;text-align:right">Qtd</th>
                                     <th style="width:60px;text-align:right">Vlr Unit</th>
@@ -1331,6 +1353,7 @@
         const totalGeralEl = document.getElementById('totalGeral');
         const btnGerarArquivo = document.getElementById('btnGerarArquivo');
         const validationBox = document.getElementById('validationBox');
+        const agrupamentosBox = document.getElementById('agrupamentosBox');
 
         let requireUorg = false; // true quando o inventário é POR DEPÓSITO
         let extractedData = null; // Dados extraídos do PDF
@@ -1442,6 +1465,21 @@
                     } else {
                         validationBox.style.display = 'none';
                     }
+                    // Exibir agrupamentos se houver
+                    if (extractedData.agrupamentos && extractedData.agrupamentos.length > 0) {
+                        const ag = extractedData.agrupamentos;
+                        const totalJuntados = ag.reduce((s, a) => s + a.quantidade, 0);
+                        let html = `<strong>ℹ Itens Agrupados (${ag.length} grupos, ${totalJuntados} itens juntados)</strong>`;
+                        html += '<ul>';
+                        ag.forEach(grupo => {
+                            html += `<li><strong>Ficha ${grupo.nrFicha}:</strong> ${grupo.especificacao} <span style="color:#666">(${grupo.quantidade} itens com NR ORD: ${grupo.nrOrds.join(', ')})</span></li>`;
+                        });
+                        html += '</ul>';
+                        agrupamentosBox.innerHTML = html;
+                        agrupamentosBox.style.display = 'block';
+                    } else {
+                        agrupamentosBox.style.display = 'none';
+                    }
                     itemsReviewSection.classList.add('show');
                     result.classList.remove('show');
                 } else {
@@ -1465,7 +1503,7 @@
                 total += vlrTotal;
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
-                    <td style="font-family:monospace;font-size:11px">${item.codigoMaterial || ''}</td>
+                    <td style="font-family:monospace;font-size:12px;text-align:center">${idx + 1}</td>
                     <td style="font-size:11px">${item.descricao || ''}</td>
                     <td style="text-align:right">${qtd.toFixed(0)}</td>
                     <td style="text-align:right">R$ ${vlrUnit.toFixed(2)}</td>
@@ -1481,7 +1519,9 @@
 
             // Recalcular validação se houver dados extraídos e total do inventário
             if (extractedData && extractedData.totalInventario) {
-                const totalInv = parseFloat(extractedData.totalInventario.replace(/\./g, '').replace(',', '.'));
+                const totalInv = typeof extractedData.totalInventario === 'number'
+                    ? extractedData.totalInventario
+                    : parseFloat(String(extractedData.totalInventario).replace(/\./g, '').replace(',', '.'));
                 const diferenca = Math.abs(total - totalInv);
                 const tolerancia = 0.02;
 
