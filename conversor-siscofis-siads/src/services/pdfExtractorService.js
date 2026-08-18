@@ -266,7 +266,7 @@ class PdfExtractorService {
         // é gravada por extenso (ex.: "Trinta e Seis") em vez da unidade física.
         const NUM_EXTENSO = '(?:um|uma|dois|duas|tr[êe]s|quatro|cinco|seis|sete|oito|nove|dez|onze|doze|treze|catorze|quatorze|quinze|dezesseis|dezessete|dezoito|dezenove|vinte|trinta|quarenta|cinq[uü]enta|sessenta|setenta|oitenta|noventa|cem|cento|duzentos|duzentas|trezentos|trezentas|quatrocentos|quatrocentas|quinhentos|quinhentas|seiscentos|seiscentas|setecentos|setecentas|oitocentos|oitocentas|novecentos|novecentas|mil)';
         const UNIDADE_EXTENSO = `(?:${NUM_EXTENSO}(?:\\s+e\\s+${NUM_EXTENSO})*)`;
-        const UNID = `(?:Metro\\s+C[uú]bico|MetroQuadrado|Cent[íi]metro|Mil[íi]metro|Unidade|Quilograma|Litro|Metro|Pe[çc]a|Caixa|Conjunto|LATA|Bloco(?:\\s*\\(papel\\))?|Pacote|Garrafa|Embalagem|D[úu]zia|Grama|Kilo(?:grama)?|Frasco|Ampola|C[aá]psula|Comprimido|Tubo|Rolo|Par|Resma|Bobina|Barra|Galao|Gal[aã]o|Bisnaga|Vidro|Kit|Dose|Sache|Lata|Cubo|${UNIDADE_EXTENSO})`;
+        const UNID = `(?:Metro\\s+C[uú]bico|MetroQuadrado|Cent[íi]metro|Mil[íi]metro|Unidade|Quilograma|Litro|Metro|Pe[çc]a|Caixa|Conjunto|LATA|Bloco(?:\\s*\\(papel\\))?|Pacote|Garrafa|Embalagem|D[úu]zia|Grama|Kilo(?:grama)?|Frasco|Ampola|C[aá]psula|Comprimido|Tubo|Rolo|Par|Resma|Bobina|Barra|Galao|Gal[aã]o|Bisnaga|Vidro|Kit|Dose|Sache|Lata|Cubo|Centena|${UNIDADE_EXTENSO})`;
         const mainRe = new RegExp(
             `^\\s*(${UNID})\\s+(\\d+)\\s+([\\d.,]+)\\s+([\\d.,]+)\\s+(BOM|REGULAR|RUIM|Recuper[aá]vel|Irrecuper[aá]vel|Inservível|Alienado)\\s+(\\d+)\\s+(.+)$`,
             'i'
