@@ -390,6 +390,63 @@
             min-height: 18px;
         }
 
+        /* ======================== MODAL DE RASCUNHO ======================== */
+        .draft-modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.55);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+        }
+        .draft-modal {
+            background: #fff;
+            border-radius: 12px;
+            padding: 24px;
+            width: 90%;
+            max-width: 440px;
+            box-shadow: 0 12px 48px rgba(0, 0, 0, 0.35);
+            animation: draftModalIn 0.18s ease;
+        }
+        @keyframes draftModalIn {
+            from { transform: translateY(10px); opacity: 0; }
+            to   { transform: translateY(0);    opacity: 1; }
+        }
+        .draft-modal h3 {
+            margin: 0 0 12px;
+            font-size: 16px;
+            color: #333;
+        }
+        .draft-modal p {
+            font-size: 13px;
+            color: #555;
+            line-height: 1.5;
+            margin: 0 0 20px;
+            white-space: pre-line;
+        }
+        .draft-modal-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+        .draft-modal-actions button {
+            padding: 9px 16px;
+            border: none;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-modal-restore { background: #28a745; color: #fff; }
+        .btn-modal-restore:hover { background: #1a7a30; }
+        .btn-modal-delete  { background: #dc3545; color: #fff; }
+        .btn-modal-delete:hover  { background: #a71d2a; }
+        .btn-modal-cancel  { background: #e0e0e0; color: #444; }
+        .btn-modal-cancel:hover  { background: #c8c8c8; }
+
         /* ======================== TABELA DE ITENS ======================== */
         .items-review-section { display: none; margin-top: 24px; }
         .items-review-section.show { display: block; }
@@ -770,6 +827,19 @@
 
             <button type="button" class="btn-save-uorg" id="btnSalvarUorg">💾 Salvar Informações das UORGs</button>
             <div class="save-status" id="saveStatus"></div>
+
+            <!-- Modal de rascunho salvo -->
+            <div class="draft-modal-overlay" id="draftModalOverlay" style="display:none">
+                <div class="draft-modal">
+                    <h3>📄 Rascunho salvo encontrado</h3>
+                    <p id="draftModalMsg"></p>
+                    <div class="draft-modal-actions">
+                        <button type="button" class="btn-modal-restore" id="btnRestoreDraft">↩ Restaurar</button>
+                        <button type="button" class="btn-modal-delete" id="btnDeleteDraft">🗑 Excluir rascunho</button>
+                        <button type="button" class="btn-modal-cancel" id="btnCancelDraft">Cancelar</button>
+                    </div>
+                </div>
+            </div>
 
             <button class="btn" id="btnGerarUorg" disabled style="margin-top:10px">Gerar Arquivo UORG (.txt)</button>
 
@@ -1299,38 +1369,69 @@
             }
         }
 
-        function restaurarUorgs() {
+        function getSavedState() {
             try {
                 const raw = localStorage.getItem(STORAGE_KEY);
-                if (!raw) return false;
+                if (!raw) return null;
                 const state = JSON.parse(raw);
-                if (!state || !Array.isArray(state.uorgList) || !state.uorgList.length) return false;
-                if (!confirm(`Existe um rascunho salvo em ${state.savedAt} com ${state.uorgList.length} UORG(s).\nDeseja restaurar?`)) return false;
-                uorgList = state.uorgList;
-                if (state.uasg)  document.getElementById('uorgUasg').value  = state.uasg;
-                if (state.orgao) document.getElementById('uorgOrgao').value = state.orgao;
-                if (state.comuns) {
-                    const c = state.comuns;
-                    const map = {
-                        'com-endereco': c.endereco, 'com-cep': c.cep, 'com-uf': c.uf,
-                        'com-municipio': c.municipio, 'com-pais': c.pais,
-                        'com-ugVinculada': c.ugVinculada, 'com-telefone': c.telefone,
-                        'com-email': c.email, 'com-cpfResponsavel': c.cpfResponsavel,
-                        'com-dataCriacao': c.dataCriacao, 'com-nrDocCriacao': c.nrDocCriacao,
-                        'com-codigoSiorg': c.codigoSiorg, 'com-codigoPrefixo': c.codigoPrefixo,
-                        'com-codigoInicio': c.codigoInicio,
-                    };
-                    Object.entries(map).forEach(([id, v]) => { const el = document.getElementById(id); if (el && v) el.value = v; });
-                    camposComuns.style.display = 'block';
-                }
-                renderUorgTable();
-                saveStatus.innerHTML = `↩ Rascunho restaurado (${state.savedAt})`;
-                saveStatus.style.color = '#1a6fa8';
-                return true;
-            } catch (e) { return false; }
+                if (!state || !Array.isArray(state.uorgList) || !state.uorgList.length) return null;
+                return state;
+            } catch (e) { return null; }
+        }
+
+        function aplicarEstado(state) {
+            uorgList = state.uorgList;
+            if (state.uasg)  document.getElementById('uorgUasg').value  = state.uasg;
+            if (state.orgao) document.getElementById('uorgOrgao').value = state.orgao;
+            if (state.comuns) {
+                const c = state.comuns;
+                const map = {
+                    'com-endereco': c.endereco, 'com-cep': c.cep, 'com-uf': c.uf,
+                    'com-municipio': c.municipio, 'com-pais': c.pais,
+                    'com-ugVinculada': c.ugVinculada, 'com-telefone': c.telefone,
+                    'com-email': c.email, 'com-cpfResponsavel': c.cpfResponsavel,
+                    'com-dataCriacao': c.dataCriacao, 'com-nrDocCriacao': c.nrDocCriacao,
+                    'com-codigoSiorg': c.codigoSiorg, 'com-codigoPrefixo': c.codigoPrefixo,
+                    'com-codigoInicio': c.codigoInicio,
+                };
+                Object.entries(map).forEach(([id, v]) => { const el = document.getElementById(id); if (el && v) el.value = v; });
+                camposComuns.style.display = 'block';
+            }
+            renderUorgTable();
+            saveStatus.innerHTML = `↩ Rascunho restaurado (${state.savedAt})`;
+            saveStatus.style.color = '#1a6fa8';
+        }
+
+        function excluirRascunho() {
+            localStorage.removeItem(STORAGE_KEY);
+            saveStatus.innerHTML = '🗑 Rascunho excluído';
+            saveStatus.style.color = '#dc3545';
+            fecharModalRascunho();
+        }
+
+        function fecharModalRascunho() {
+            document.getElementById('draftModalOverlay').style.display = 'none';
+        }
+
+        function restaurarUorgs() {
+            const state = getSavedState();
+            if (!state) return false;
+            document.getElementById('draftModalMsg').textContent =
+                `Existe um rascunho salvo em ${state.savedAt} com ${state.uorgList.length} UORG(s).\nO que deseja fazer?`;
+            document.getElementById('draftModalOverlay').style.display = 'flex';
+            return true;
         }
 
         btnSalvarUorg.addEventListener('click', salvarUorgs);
+
+        // Modal de rascunho: ações
+        document.getElementById('btnRestoreDraft').addEventListener('click', () => {
+            const state = getSavedState();
+            if (state) aplicarEstado(state);
+            fecharModalRascunho();
+        });
+        document.getElementById('btnDeleteDraft').addEventListener('click', excluirRascunho);
+        document.getElementById('btnCancelDraft').addEventListener('click', fecharModalRascunho);
 
         // Restaurar ao carregar a página
         restaurarUorgs();
