@@ -71,7 +71,7 @@ O sistema detecta automaticamente pela leitura do título/cabeçalho do PDF (`pd
 Metro Cubico, MetroQuadrado, Centímetro, Milímetro, Unidade, Quilograma, Litro, Metro,
 Peça, Caixa, Conjunto, LATA, Bloco, Pacote, Garrafa, Embalagem, Dúzia, Grama, Quilograma,
 Frasco, Ampola, Cápsula, Comprimido, Tubo, Rolo, Par, Resma, Bobina, Barra, Galão,
-Bisnaga, Vidro, Kit, Dose, Sache, Lata, Cubo
+Bisnaga, Vidro, Kit, Dose, Sache, Lata, Cubo, Centena
 ```
 
 **Correção manual em lote (Python):**  
